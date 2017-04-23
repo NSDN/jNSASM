@@ -1,5 +1,6 @@
 package cn.ac.nya.nsasm;
 
+import java.io.StringReader;
 import java.util.*;
 
 /**
@@ -43,8 +44,10 @@ public class NSASM {
     private int stackSize;
     private Register[] regGroup;
     private Register stateReg;
-    private int progSeg, tmpSeg, prevSeg;
-    private int progCnt, tmpCnt, prevCnt;
+
+    private LinkedList<Integer> backupReg;
+    private int progSeg, tmpSeg;
+    private int progCnt, tmpCnt;
 
     private LinkedHashMap<String, Operator> funList;
     private LinkedHashMap<String, String[]> code;
@@ -72,16 +75,10 @@ public class NSASM {
                 return verifyBound(var, '\"', '\"') ||
                        (var.split("\"").length > 2 && var.contains("*"));
             case INT:
+                if (var.endsWith("f") || var.endsWith("F"))
+                    return var.startsWith("0x") || var.startsWith("0X");
                 return (
-                    !var.contains(".") && (
-                        (
-                            (var.startsWith("0x") || var.startsWith("0X")) &&
-                            (var.endsWith("f") || var.endsWith("F"))
-                        ) || (
-                            !(var.startsWith("0x") || var.startsWith("0X")) &&
-                            !(var.endsWith("f") || var.endsWith("F"))
-                        )
-                    )
+                    !var.contains(".")
                 ) && (
                     (var.charAt(0) >= '0' && var.charAt(0) <= '9') ||
                     var.charAt(0) == '-' || var.charAt(0) == '+' ||
@@ -100,7 +97,7 @@ public class NSASM {
                        !verifyWord(var, WordType.STR) && !verifyWord(var, WordType.INT) &&
                        !verifyWord(var, WordType.FLOAT) && !verifyWord(var, WordType.TAG);
             case TAG:
-                return verifyBound(var, '[', ']');
+                return verifyBound(var, '[', ']') || verifyBound(var, '<', '>');
         }
         return false;
     }
@@ -244,8 +241,11 @@ public class NSASM {
         if (code == null) return;
         Result result; String segBuf, codeBuf;
 
-        for (progSeg = progCnt = 0; progSeg < code.keySet().size(); progSeg++) {
-            segBuf = ((String[]) code.keySet().toArray())[progSeg];
+        progSeg = progCnt = 0;
+
+        for (; progSeg < code.keySet().size(); progSeg++) {
+            segBuf = (String) (code.keySet().toArray())[progSeg];
+            if (code.get(segBuf) == null) continue;
 
             for (; progCnt < code.get(segBuf).length; progCnt++) {
                 if (tmpSeg >= 0 || tmpCnt >= 0) {
@@ -253,7 +253,8 @@ public class NSASM {
                     tmpSeg = -1; tmpCnt = -1;
                 }
 
-                segBuf = ((String[]) code.keySet().toArray())[progSeg];
+                segBuf = (String) (code.keySet().toArray())[progSeg];
+                if (code.get(segBuf) == null) break;
                 codeBuf = code.get(segBuf)[progCnt];
 
                 if (codeBuf.length() == 0) {
@@ -263,15 +264,16 @@ public class NSASM {
                 result = execute(codeBuf);
                 if (result == Result.ERR) {
                     Util.print("\nNSASM running error!\n");
-                    Util.print("At ["+ segBuf + "], line " + (progCnt + 1) + ": " + codeBuf + "\n\n");
+                    Util.print("At "+ segBuf + ", line " + (progCnt + 1) + ": " + codeBuf + "\n\n");
+                    return;
                 } else if (result == Result.ETC) {
                     break;
                 }
             }
 
-            if (prevSeg >= 0 || prevCnt >= 0) {
-                progSeg = prevSeg - 1; progCnt = prevCnt;
-                prevSeg = -1; prevCnt = -1;
+            if (!backupReg.isEmpty()) {
+                progCnt = backupReg.pop();
+                progSeg = backupReg.pop() - 1;
             } else progCnt = 0;
         }
     }
@@ -284,17 +286,38 @@ public class NSASM {
             buf.add(scanner.nextLine());
         }
 
-        return (String[]) buf.toArray();
+        if (buf.isEmpty()) return null;
+        return buf.toArray(new String[0]);
+    }
+
+    private Result appendCode(String[][] code) {
+        if (code == null) return Result.OK;
+        for (String[] seg : code) {
+            if (seg[0].startsWith(".")) continue; //This is conf seg
+            if (this.code.containsKey(seg[0])) {
+                Util.print("\nNSASM loading error!\n");
+                Util.print("At "+ seg[0] + "\n");
+                return Result.ERR;
+            }
+            this.code.put(seg[0], convToArray(seg[1]));
+        }
+        return Result.OK;
     }
 
     public NSASM(int heapSize, int stackSize, int regCnt, String[][] code) {
         heapManager = new LinkedHashMap<>(heapSize);
         stackManager = new LinkedList<>();
         this.stackSize = stackSize;
+
         stateReg = new Register();
+        stateReg.data = 0;
+        stateReg.readOnly = false;
+        stateReg.type = RegType.INT;
+
+        backupReg = new LinkedList<>();
         progSeg = 0; progCnt = 0;
         tmpSeg = -1; tmpCnt = -1;
-        prevSeg = -1; prevCnt = -1;
+
         regGroup = new Register[regCnt];
         for (int i = 0; i < regGroup.length; i++) {
             regGroup[i] = new Register();
@@ -302,27 +325,41 @@ public class NSASM {
             regGroup[i].readOnly = false;
             regGroup[i].data = 0;
         }
+
         funList = new LinkedHashMap<>();
         loadFunList();
+
         this.code = new LinkedHashMap<>();
-        if (code == null) return;
-        for (String[] seg : code) {
-            this.code.put(seg[0], convToArray(seg[1]));
+        if (appendCode(code) == Result.ERR) {
+            Util.print("At file: " + "_main_" + "\n\n");
+            this.code.clear();
         }
+    }
+    
+    private Object convValue(Object value, RegType type) {
+        switch (type) {
+            case INT:
+                return Integer.valueOf(value.toString());
+            case CHAR:
+                return (value.toString()).charAt(0);
+            case FLOAT:
+                return Float.valueOf(value.toString());
+        }
+        return value;
     }
 
     private Result calcInt(Register dst, Register src, char type) {
         switch (type) {
-            case '+': dst.data = (int) dst.data + (int) src.data; break;
-            case '-': dst.data = (int) dst.data - (int) src.data; break;
-            case '*': dst.data = (int) dst.data * (int) src.data; break;
-            case '/': dst.data = (int) dst.data / (int) src.data; break;
-            case '&': dst.data = (int) dst.data & (int) src.data; break;
-            case '|': dst.data = (int) dst.data | (int) src.data; break;
-            case '~': dst.data = ~(int) dst.data; break;
-            case '^': dst.data = (int) dst.data ^ (int) src.data; break;
-            case '<': dst.data = (int) dst.data << (int) src.data; break;
-            case '>': dst.data = (int) dst.data >> (int) src.data; break;
+            case '+': dst.data = (int) convValue(dst.data, RegType.INT) + (int) convValue(src.data, RegType.INT); break;
+            case '-': dst.data = (int) convValue(dst.data, RegType.INT) - (int) convValue(src.data, RegType.INT); break;
+            case '*': dst.data = (int) convValue(dst.data, RegType.INT) * (int) convValue(src.data, RegType.INT); break;
+            case '/': dst.data = (int) convValue(dst.data, RegType.INT) / (int) convValue(src.data, RegType.INT); break;
+            case '&': dst.data = (int) convValue(dst.data, RegType.INT) & (int) convValue(src.data, RegType.INT); break;
+            case '|': dst.data = (int) convValue(dst.data, RegType.INT) | (int) convValue(src.data, RegType.INT); break;
+            case '~': dst.data = ~(int) convValue(dst.data, RegType.INT); break;
+            case '^': dst.data = (int) convValue(dst.data, RegType.INT) ^ (int) convValue(src.data, RegType.INT); break;
+            case '<': dst.data = (int) convValue(dst.data, RegType.INT) << (int) convValue(src.data, RegType.INT); break;
+            case '>': dst.data = (int) convValue(dst.data, RegType.INT) >> (int) convValue(src.data, RegType.INT); break;
             default: return Result.ERR;
         }
         return Result.OK;
@@ -330,16 +367,16 @@ public class NSASM {
 
     private Result calcChar(Register dst, Register src, char type) {
         switch (type) {
-            case '+': dst.data = (char) dst.data + (char) src.data; break;
-            case '-': dst.data = (char) dst.data - (char) src.data; break;
-            case '*': dst.data = (char) dst.data * (char) src.data; break;
-            case '/': dst.data = (char) dst.data / (char) src.data; break;
-            case '&': dst.data = (char) dst.data & (char) src.data; break;
-            case '|': dst.data = (char) dst.data | (char) src.data; break;
-            case '~': dst.data = ~(char) dst.data; break;
-            case '^': dst.data = (char) dst.data ^ (char) src.data; break;
-            case '<': dst.data = (char) dst.data << (char) src.data; break;
-            case '>': dst.data = (char) dst.data >> (char) src.data; break;
+            case '+': dst.data = (char) convValue(dst.data, RegType.CHAR) + (char) convValue(src.data, RegType.CHAR); break;
+            case '-': dst.data = (char) convValue(dst.data, RegType.CHAR) - (char) convValue(src.data, RegType.CHAR); break;
+            case '*': dst.data = (char) convValue(dst.data, RegType.CHAR) * (char) convValue(src.data, RegType.CHAR); break;
+            case '/': dst.data = (char) convValue(dst.data, RegType.CHAR) / (char) convValue(src.data, RegType.CHAR); break;
+            case '&': dst.data = (char) convValue(dst.data, RegType.CHAR) & (char) convValue(src.data, RegType.CHAR); break;
+            case '|': dst.data = (char) convValue(dst.data, RegType.CHAR) | (char) convValue(src.data, RegType.CHAR); break;
+            case '~': dst.data = ~(char) convValue(dst.data, RegType.CHAR); break;
+            case '^': dst.data = (char) convValue(dst.data, RegType.CHAR) ^ (char) convValue(src.data, RegType.CHAR); break;
+            case '<': dst.data = (char) convValue(dst.data, RegType.CHAR) << (char) convValue(src.data, RegType.CHAR); break;
+            case '>': dst.data = (char) convValue(dst.data, RegType.CHAR) >> (char) convValue(src.data, RegType.CHAR); break;
             default: return Result.ERR;
         }
         return Result.OK;
@@ -347,10 +384,10 @@ public class NSASM {
 
     private Result calcFloat(Register dst, Register src, char type) {
         switch (type) {
-            case '+': dst.data = (float) dst.data + (float) src.data; break;
-            case '-': dst.data = (float) dst.data - (float) src.data; break;
-            case '*': dst.data = (float) dst.data * (float) src.data; break;
-            case '/': dst.data = (float) dst.data / (float) src.data; break;
+            case '+': dst.data = (float) convValue(dst.data, RegType.FLOAT) + (float) convValue(src.data, RegType.FLOAT); break;
+            case '-': dst.data = (float) convValue(dst.data, RegType.FLOAT) - (float) convValue(src.data, RegType.FLOAT); break;
+            case '*': dst.data = (float) convValue(dst.data, RegType.FLOAT) * (float) convValue(src.data, RegType.FLOAT); break;
+            case '/': dst.data = (float) convValue(dst.data, RegType.FLOAT) / (float) convValue(src.data, RegType.FLOAT); break;
             default: return Result.ERR;
         }
         return Result.OK;
@@ -358,8 +395,8 @@ public class NSASM {
 
     private Result calcStr(Register dst, Register src, char type) {
         switch (type) {
-            case '+': dst.strPtr = dst.strPtr + (int) src.data; break;
-            case '-': dst.strPtr = dst.strPtr - (int) src.data; break;
+            case '+': dst.strPtr = dst.strPtr + (int) convValue(src.data, RegType.INT); break;
+            case '-': dst.strPtr = dst.strPtr - (int) convValue(src.data, RegType.INT); break;
             default: return Result.ERR;
         }
         return Result.OK;
@@ -379,7 +416,7 @@ public class NSASM {
         return Result.OK;
     }
 
-    protected void loadFunList() {
+    private void loadFunList() {
         funList.put("rem", (dst, src) -> {
             return Result.OK;
         });
@@ -678,7 +715,8 @@ public class NSASM {
             String segBuf, lineBuf;
 
             for (int seg = 0; seg < code.keySet().size(); seg++) {
-                segBuf = ((String[]) code.keySet().toArray())[seg];
+                segBuf = (String) (code.keySet().toArray())[seg];
+                if (code.get(segBuf) == null) continue;
                 for (int line = 0; line < code.get(segBuf).length; line++) {
                     lineBuf = code.get(segBuf)[line];
                     if (tag.equals(lineBuf)) {
@@ -693,28 +731,28 @@ public class NSASM {
         });
 
         funList.put("jz", (dst, src) -> {
-            if (((float) stateReg.data) == 0) {
+            if ((float) convValue(stateReg.data, RegType.FLOAT) == 0) {
                 return funList.get("jmp").run(dst, src);
             }
             return Result.OK;
         });
 
         funList.put("jnz", (dst, src) -> {
-            if (((float) stateReg.data) != 0) {
+            if ((float) convValue(stateReg.data, RegType.FLOAT) != 0) {
                 return funList.get("jmp").run(dst, src);
             }
             return Result.OK;
         });
 
         funList.put("jg", (dst, src) -> {
-            if (((float) stateReg.data) > 0) {
+            if ((float) convValue(stateReg.data, RegType.FLOAT) > 0) {
                 return funList.get("jmp").run(dst, src);
             }
             return Result.OK;
         });
 
         funList.put("jl", (dst, src) -> {
-            if (((float) stateReg.data) < 0) {
+            if ((float) convValue(stateReg.data, RegType.FLOAT) < 0) {
                 return funList.get("jmp").run(dst, src);
             }
             return Result.OK;
@@ -746,7 +784,7 @@ public class NSASM {
             if (dst == null) return Result.ERR;
             String segBuf, target = (String) dst.data;
             for (int seg = 0; seg < code.keySet().size(); seg++) {
-                segBuf = ((String[]) code.keySet().toArray())[seg];
+                segBuf = (String) (code.keySet().toArray())[seg];
                 if (target.equals(segBuf)) {
                     tmpSeg = seg;
                     tmpCnt = 0;
@@ -761,14 +799,29 @@ public class NSASM {
             if (dst == null) return Result.ERR;
             String segBuf, target = (String) dst.data;
             for (int seg = 0; seg < code.keySet().size(); seg++) {
-                segBuf = ((String[]) code.keySet().toArray())[seg];
+                segBuf = (String) (code.keySet().toArray())[seg];
                 if (target.equals(segBuf)) {
                     tmpSeg = seg;
                     tmpCnt = 0;
-                    prevSeg = progSeg;
-                    prevCnt = progCnt;
+                    backupReg.push(progSeg);
+                    backupReg.push(progCnt);
                     return Result.OK;
                 }
+            }
+            return Result.OK;
+        });
+
+        funList.put("ld", (dst, src) -> {
+            if (src != null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.type != RegType.STR) return Result.ERR;
+            String path = (String) dst.data;
+            String code = Util.read(path);
+            if (code == null) return Result.ERR;
+            String[][] segs = Util.getSegments(code);
+            if (appendCode(segs) == Result.ERR) {
+                Util.print("At file: " + path + "\n");
+                return Result.ERR;
             }
             return Result.OK;
         });

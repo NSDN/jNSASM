@@ -2,6 +2,7 @@ package cn.ac.nya.nsasm;
 
 import cn.ac.nya.nsasm.NSASM.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -36,10 +37,16 @@ public class Util {
     }
 
     public static String formatCode(String var) {
-        while (var.contains("\r"))
+        if (var.isEmpty()) return "";
+        while (var.contains("\r")) {
             var = var.replace("\r", "");
-        while (var.charAt(0) == '\t' || var.charAt(0) == ' ')
+            if (var.isEmpty()) return "";
+        }
+        while (var.charAt(0) == '\t' || var.charAt(0) == ' ') {
             var = var.substring(1);
+            if (var.isEmpty()) return "";
+        }
+
         String left, right;
         if (var.contains("\'")) {
             left = var.split("\'")[0];
@@ -71,31 +78,48 @@ public class Util {
     public static String[][] getSegments(String var) {
         LinkedHashMap<String, String> segBuf = new LinkedHashMap<>();
         String varBuf = ""; Scanner scanner = new Scanner(var);
+        LinkedList<String> pub = new LinkedList<>();
 
         while (scanner.hasNextLine()) {
             varBuf = varBuf.concat(formatCode(scanner.nextLine()) + "\n");
+        }
+        while (varBuf.contains("\n\n")) {
+            varBuf = varBuf.replace("\n\n", "\n");
         }
         scanner = new Scanner(varBuf);
 
         String head, body = "", tmp;
         while (scanner.hasNextLine()) {
             head = scanner.nextLine();
-            if (!head.contains("{")) continue;
+            if (!head.contains("{")) {
+                pub.add(head);
+                continue;
+            }
             head = head.replace("{", "");
 
-            tmp = scanner.nextLine();
-            while (!tmp.contains("}")) {
-                body = body.concat(tmp + "\n");
+            if (scanner.hasNextLine()) {
                 tmp = scanner.nextLine();
+                while (!tmp.contains("}") && scanner.hasNextLine()) {
+                    body = body.concat(tmp + "\n");
+                    tmp = scanner.nextLine();
+                }
             }
 
             segBuf.put(head, body);
+            body = "";
         }
 
-        String[][] out = new String[segBuf.size()][2];
+        String[][] out = new String[segBuf.size() + 1][2];
+
+        out[0][0] = "_pub_" + Integer.toHexString(Integer.signum(var.hashCode()) * var.hashCode());
+        out[0][1] = "";
+        for (String i : pub) {
+            out[0][1] = out[0][1].concat(i + "\n");
+        }
+
         for (int i = 0; i < segBuf.keySet().size(); i++) {
-            out[i][0] = (String) segBuf.keySet().toArray()[i];
-            out[i][1] = segBuf.get(out[i][0]);
+            out[i + 1][0] = (String) segBuf.keySet().toArray()[i];
+            out[i + 1][1] = segBuf.get(out[i + 1][0]);
         }
 
         return out;
@@ -103,15 +127,81 @@ public class Util {
 
     public static String getSegment(String var, String head) {
         String[][] segments = getSegments(var);
+        String result = "";
         for (String[] i : segments) {
-            if (i[0].equals(head))
-                return i[1];
+            if (i[0].equals(head)) {
+                if (result.isEmpty())
+                    result = i[1];
+                else
+                    return null;
+            }
+
         }
-        return "";
+        return result;
+    }
+
+    public static String read(String path) {
+        BufferedReader reader;
+        try {
+            reader = new BufferedReader(new FileReader(path));
+        } catch (Exception e) {
+            print("File open failed.\n");
+            print("At file: " + path + "\n\n");
+            return null;
+        }
+
+        String str = "";
+        try {
+            while (reader.ready())
+                str = str.concat(reader.readLine() + "\n");
+        } catch (Exception e) {
+            print("File read error.\n");
+            print("At file: " + path + "\n\n");
+            return null;
+        }
+        return str;
     }
 
     public static void run(String path) {
+        String str = read(path);
+        if (str == null) return;
 
+        int heap = 64, stack = 32, regs = 16;
+
+        String conf = getSegment(str, ".<conf>");
+        if (conf == null) {
+            print("Conf load error.\n");
+            print("At file: " + path + "\n\n");
+            return;
+        }
+        if (!conf.isEmpty()) {
+            Scanner confReader = new Scanner(conf);
+            try {
+                String buf;
+                while (confReader.hasNextLine()) {
+                    buf = confReader.nextLine();
+                    switch (buf.split(" ")[0]) {
+                        case "heap":
+                            heap = Integer.valueOf(buf.split(" ")[1]);
+                            break;
+                        case "stack":
+                            stack = Integer.valueOf(buf.split(" ")[1]);
+                            break;
+                        case "reg":
+                            regs = Integer.valueOf(buf.split(" ")[1]);
+                            break;
+                    }
+                }
+            } catch (Exception e) {
+                print("Conf load error.\n");
+                print("At file: " + path + "\n\n");
+                return;
+            }
+        }
+
+        String[][] code = getSegments(str);
+        NSASM nsasm = new NSASM(heap, stack, regs, code);
+        nsasm.run();
     }
 
     public static void console() {
