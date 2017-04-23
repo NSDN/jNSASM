@@ -1,9 +1,13 @@
 package cn.ac.nya.nsasm;
 
 import java.util.*;
-import java.util.regex.Pattern;
 
+/**
+ * Created by drzzm on 2017.4.21.
+ */
 public class NSASM {
+
+    public static final String version = "0.2 (Java)";
 
     private enum RegType {
         CHAR, STR, INT, FLOAT
@@ -12,6 +16,7 @@ public class NSASM {
     private class Register {
         RegType type;
         Object data;
+        int strPtr = 0;
         boolean readOnly;
 
         @Override
@@ -20,10 +25,17 @@ public class NSASM {
                     "Data: " + data.toString() + "\n" +
                     "ReadOnly: " + readOnly;
         }
+
+        public void copy(Register reg) {
+            type = reg.type;
+            data = reg.data;
+            strPtr = reg.strPtr;
+            readOnly = reg.readOnly;
+        }
     }
 
     private interface Operator {
-        public abstract Result run(Register dst, Register src);
+        Result run(Register dst, Register src);
     }
 
     private LinkedHashMap<String, Register> heapManager;
@@ -31,11 +43,11 @@ public class NSASM {
     private int stackSize;
     private Register[] regGroup;
     private Register stateReg;
-    private String jumpTag;
-    private int progCnt;
+    private int progSeg, tmpSeg, prevSeg;
+    private int progCnt, tmpCnt, prevCnt;
 
     private LinkedHashMap<String, Operator> funList;
-    private LinkedHashMap<String, String> code;
+    private LinkedHashMap<String, String[]> code;
 
     public enum Result {
         OK, ERR, ETC
@@ -61,24 +73,28 @@ public class NSASM {
                        (var.split("\"").length > 2 && var.contains("*"));
             case INT:
                 return (
-                    !var.contains(".") &&
-                    var.charAt(var.length() - 1) != 'f' &&
-                    var.charAt(var.length() - 1) != 'F'
+                    !var.contains(".") && (
+                        (
+                            (var.startsWith("0x") || var.startsWith("0X")) &&
+                            (var.endsWith("f") || var.endsWith("F"))
+                        ) || (
+                            !(var.startsWith("0x") || var.startsWith("0X")) &&
+                            !(var.endsWith("f") || var.endsWith("F"))
+                        )
+                    )
                 ) && (
                     (var.charAt(0) >= '0' && var.charAt(0) <= '9') ||
                     var.charAt(0) == '-' || var.charAt(0) == '+' ||
-                    var.charAt(var.length() - 1) == 'h' ||
-                    var.charAt(var.length() - 1) == 'H'
+                    var.endsWith("h") || var.endsWith("H")
                 );
             case FLOAT:
                 return (
                     var.contains(".") ||
-                    var.charAt(var.length() - 1) == 'f' ||
-                    var.charAt(var.length() - 1) == 'F'
+                    var.endsWith("f") || var.endsWith("F")
                 ) && (
                     (var.charAt(0) >= '0' && var.charAt(0) <= '9') ||
                     var.charAt(0) == '-' || var.charAt(0) == '+'
-                ) && (var.charAt(1) != 'x' || var.charAt(1) != 'X');
+                ) && (!var.startsWith("0x") || !var.startsWith("0X"));
             case VAR:
                 return !verifyWord(var, WordType.REG) && !verifyWord(var, WordType.CHAR) &&
                        !verifyWord(var, WordType.STR) && !verifyWord(var, WordType.INT) &&
@@ -130,7 +146,7 @@ public class NSASM {
                         if (repeat == null) return null;
                         if (repeat.type != RegType.INT) return null;
                         for (int i = 1; i < (int) repeat.data; i++)
-                            tmp += rep;
+                            tmp = tmp.concat(rep);
                     } else {
                         tmp = var.split("\"")[1];
                     }
@@ -193,7 +209,11 @@ public class NSASM {
 
         operator = var.split(" ")[0];
         if (operator.length() + 1 < var.length()) {
-            if (operator.equals("var")) { //Variable define
+            if (
+                operator.equals("var") || operator.equals("int") ||
+                operator.equals("char") || operator.equals("float") ||
+                operator.equals("str")
+            ) { //Variable define
                 dst = var.substring(operator.length() + 1).split("=")[0];
                 if (var.length() <= operator.length() + 1 + dst.length()) return Result.ERR;
                 if (var.charAt(operator.length() + 1 + dst.length()) == '=')
@@ -222,13 +242,59 @@ public class NSASM {
 
     public void run() {
         if (code == null) return;
+        Result result; String segBuf, codeBuf;
 
+        for (progSeg = progCnt = 0; progSeg < code.keySet().size(); progSeg++) {
+            segBuf = ((String[]) code.keySet().toArray())[progSeg];
+
+            for (; progCnt < code.get(segBuf).length; progCnt++) {
+                if (tmpSeg >= 0 || tmpCnt >= 0) {
+                    progSeg = tmpSeg; progCnt = tmpCnt;
+                    tmpSeg = -1; tmpCnt = -1;
+                }
+
+                segBuf = ((String[]) code.keySet().toArray())[progSeg];
+                codeBuf = code.get(segBuf)[progCnt];
+
+                if (codeBuf.length() == 0) {
+                    continue;
+                }
+
+                result = execute(codeBuf);
+                if (result == Result.ERR) {
+                    Util.print("\nNSASM running error!\n");
+                    Util.print("At ["+ segBuf + "], line " + (progCnt + 1) + ": " + codeBuf + "\n\n");
+                } else if (result == Result.ETC) {
+                    break;
+                }
+            }
+
+            if (prevSeg >= 0 || prevCnt >= 0) {
+                progSeg = prevSeg - 1; progCnt = prevCnt;
+                prevSeg = -1; prevCnt = -1;
+            } else progCnt = 0;
+        }
+    }
+
+    private String[] convToArray(String var) {
+        Scanner scanner = new Scanner(var);
+        LinkedList<String> buf = new LinkedList<>();
+
+        while (scanner.hasNextLine()) {
+            buf.add(scanner.nextLine());
+        }
+
+        return (String[]) buf.toArray();
     }
 
     public NSASM(int heapSize, int stackSize, int regCnt, String[][] code) {
         heapManager = new LinkedHashMap<>(heapSize);
         stackManager = new LinkedList<>();
         this.stackSize = stackSize;
+        stateReg = new Register();
+        progSeg = 0; progCnt = 0;
+        tmpSeg = -1; tmpCnt = -1;
+        prevSeg = -1; prevCnt = -1;
         regGroup = new Register[regCnt];
         for (int i = 0; i < regGroup.length; i++) {
             regGroup[i] = new Register();
@@ -241,23 +307,471 @@ public class NSASM {
         this.code = new LinkedHashMap<>();
         if (code == null) return;
         for (String[] seg : code) {
-            this.code.put(seg[0], seg[1]);
+            this.code.put(seg[0], convToArray(seg[1]));
         }
     }
 
+    private Result calcInt(Register dst, Register src, char type) {
+        switch (type) {
+            case '+': dst.data = (int) dst.data + (int) src.data; break;
+            case '-': dst.data = (int) dst.data - (int) src.data; break;
+            case '*': dst.data = (int) dst.data * (int) src.data; break;
+            case '/': dst.data = (int) dst.data / (int) src.data; break;
+            case '&': dst.data = (int) dst.data & (int) src.data; break;
+            case '|': dst.data = (int) dst.data | (int) src.data; break;
+            case '~': dst.data = ~(int) dst.data; break;
+            case '^': dst.data = (int) dst.data ^ (int) src.data; break;
+            case '<': dst.data = (int) dst.data << (int) src.data; break;
+            case '>': dst.data = (int) dst.data >> (int) src.data; break;
+            default: return Result.ERR;
+        }
+        return Result.OK;
+    }
+
+    private Result calcChar(Register dst, Register src, char type) {
+        switch (type) {
+            case '+': dst.data = (char) dst.data + (char) src.data; break;
+            case '-': dst.data = (char) dst.data - (char) src.data; break;
+            case '*': dst.data = (char) dst.data * (char) src.data; break;
+            case '/': dst.data = (char) dst.data / (char) src.data; break;
+            case '&': dst.data = (char) dst.data & (char) src.data; break;
+            case '|': dst.data = (char) dst.data | (char) src.data; break;
+            case '~': dst.data = ~(char) dst.data; break;
+            case '^': dst.data = (char) dst.data ^ (char) src.data; break;
+            case '<': dst.data = (char) dst.data << (char) src.data; break;
+            case '>': dst.data = (char) dst.data >> (char) src.data; break;
+            default: return Result.ERR;
+        }
+        return Result.OK;
+    }
+
+    private Result calcFloat(Register dst, Register src, char type) {
+        switch (type) {
+            case '+': dst.data = (float) dst.data + (float) src.data; break;
+            case '-': dst.data = (float) dst.data - (float) src.data; break;
+            case '*': dst.data = (float) dst.data * (float) src.data; break;
+            case '/': dst.data = (float) dst.data / (float) src.data; break;
+            default: return Result.ERR;
+        }
+        return Result.OK;
+    }
+
+    private Result calcStr(Register dst, Register src, char type) {
+        switch (type) {
+            case '+': dst.strPtr = dst.strPtr + (int) src.data; break;
+            case '-': dst.strPtr = dst.strPtr - (int) src.data; break;
+            default: return Result.ERR;
+        }
+        return Result.OK;
+    }
+
+    private Result calc(Register dst, Register src, char type) {
+        switch (dst.type) {
+            case INT:
+                return calcInt(dst, src, type);
+            case CHAR:
+                return calcChar(dst, src, type);
+            case FLOAT:
+                return calcFloat(dst, src, type);
+            case STR:
+                return calcStr(dst, src, type);
+        }
+        return Result.OK;
+    }
+
     protected void loadFunList() {
+        funList.put("rem", (dst, src) -> {
+            return Result.OK;
+        });
+
         funList.put("var", (dst, src) -> {
             if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
             if (!verifyWord((String) dst.data, WordType.VAR)) return Result.ERR;
             if (heapManager.containsKey((String) dst.data)) return Result.ERR;
             if (src.type != RegType.STR) src.readOnly = false;
             heapManager.put((String) dst.data, src);
             return Result.OK;
         });
-    }
 
-    public static void main(String[] args) {
-        Util.console();
+        funList.put("int", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (!verifyWord((String) dst.data, WordType.VAR)) return Result.ERR;
+            if (heapManager.containsKey((String) dst.data)) return Result.ERR;
+            if (src.type != RegType.STR) src.readOnly = false;
+            if (src.type != RegType.INT) return Result.ERR;
+            heapManager.put((String) dst.data, src);
+            return Result.OK;
+        });
+
+        funList.put("char", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (!verifyWord((String) dst.data, WordType.VAR)) return Result.ERR;
+            if (heapManager.containsKey((String) dst.data)) return Result.ERR;
+            if (src.type != RegType.STR) src.readOnly = false;
+            if (src.type != RegType.CHAR) return Result.ERR;
+            heapManager.put((String) dst.data, src);
+            return Result.OK;
+        });
+
+        funList.put("float", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (!verifyWord((String) dst.data, WordType.VAR)) return Result.ERR;
+            if (heapManager.containsKey((String) dst.data)) return Result.ERR;
+            if (src.type != RegType.STR) src.readOnly = false;
+            if (src.type != RegType.FLOAT) return Result.ERR;
+            heapManager.put((String) dst.data, src);
+            return Result.OK;
+        });
+
+        funList.put("str", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (!verifyWord((String) dst.data, WordType.VAR)) return Result.ERR;
+            if (heapManager.containsKey((String) dst.data)) return Result.ERR;
+            if (src.type != RegType.STR) src.readOnly = false;
+            if (src.type != RegType.STR) return Result.ERR;
+            heapManager.put((String) dst.data, src);
+            return Result.OK;
+        });
+
+        funList.put("mov", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            if (dst.type == RegType.CHAR && src.type == RegType.STR) {
+                dst.data = ((String) src.data).charAt(src.strPtr);
+            } else if (dst.type == RegType.STR && src.type == RegType.CHAR) {
+                char[] array = ((String) dst.data).toCharArray();
+                array[dst.strPtr] = (char) src.data;
+                dst.data = new String(array);
+            } else {
+                dst.copy(src);
+                if (dst.readOnly) dst.readOnly = false;
+            }
+            return Result.OK;
+        });
+
+        funList.put("push", (dst, src) -> {
+            if (src != null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (stackManager.size() >= stackSize) return Result.ERR;
+            stackManager.push(dst);
+            return Result.OK;
+        });
+
+        funList.put("pop", (dst, src) -> {
+            if (src != null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            dst.copy(stackManager.pop());
+            return Result.OK;
+        });
+
+        funList.put("in", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            String buf; Register reg;
+            switch ((int) dst.data) {
+                case 0x00:
+                    if (src.readOnly && src.type != RegType.STR) return Result.ERR;
+                    buf = Util.scan();
+                    switch (src.type) {
+                        case INT:
+                            reg = getRegister(buf);
+                            if (reg == null) return Result.OK;
+                            if (reg.type != RegType.INT) return Result.OK;
+                            src.data = reg.data;
+                            break;
+                        case CHAR:
+                            if (buf.length() < 1) return Result.OK;
+                            src.data = buf.charAt(0);
+                            break;
+                        case FLOAT:
+                            reg = getRegister(buf);
+                            if (reg == null) return Result.OK;
+                            if (reg.type != RegType.FLOAT) return Result.OK;
+                            src.data = reg.data;
+                            break;
+                        case STR:
+                            if (buf.length() < 1) return Result.OK;
+                            src.data = buf;
+                            src.strPtr = 0;
+                            break;
+                    }
+                    break;
+                case 0xFF:
+                    Util.print("[DEBUG] <<< ");
+                    if (src.readOnly && src.type != RegType.STR) return Result.ERR;
+                    buf = Util.scan();
+                    switch (src.type) {
+                        case INT:
+                            reg = getRegister(buf);
+                            if (reg == null) return Result.OK;
+                            if (reg.type != RegType.INT) return Result.OK;
+                            src.data = reg.data;
+                            break;
+                        case CHAR:
+                            if (buf.length() < 1) return Result.OK;
+                            src.data = buf.charAt(0);
+                            break;
+                        case FLOAT:
+                            reg = getRegister(buf);
+                            if (reg == null) return Result.OK;
+                            if (reg.type != RegType.FLOAT) return Result.OK;
+                            src.data = reg.data;
+                            break;
+                        case STR:
+                            if (buf.length() < 1) return Result.OK;
+                            src.data = buf;
+                            src.strPtr = 0;
+                            break;
+                    }
+                    break;
+                default:
+                    return Result.ERR;
+            }
+            return Result.OK;
+        });
+
+        funList.put("out", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            switch ((int) dst.data) {
+                case 0x00:
+                    if (src.type == RegType.STR) {
+                        Util.print(((String) src.data).substring(src.strPtr));
+                    } else Util.print(src.data);
+                    break;
+                case 0xFF:
+                    Util.print("[DEBUG] >>> ");
+                    if (src.type == RegType.STR) {
+                        Util.print(((String) src.data).substring(src.strPtr));
+                    } else Util.print(src.data);
+                    break;
+                default:
+                    return Result.ERR;
+            }
+            return Result.OK;
+        });
+
+        funList.put("prt", (dst, src) -> {
+            if (src != null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.type == RegType.STR) {
+                Util.print(((String) dst.data).substring(dst.strPtr) + '\n');
+            } else Util.print(dst.data.toString() + '\n');
+            return Result.OK;
+        });
+
+        funList.put("add", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            return calc(dst, src, '+');
+        });
+
+        funList.put("inc", (dst, src) -> {
+            if (src != null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            Register register = new Register();
+            register.readOnly = false;
+            register.type = RegType.CHAR;
+            register.data = 1;
+            return calc(dst, register, '+');
+        });
+
+        funList.put("sub", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            return calc(dst, src, '-');
+        });
+
+        funList.put("dec", (dst, src) -> {
+            if (src != null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            Register register = new Register();
+            register.readOnly = false;
+            register.type = RegType.CHAR;
+            register.data = 1;
+            return calc(dst, register, '-');
+        });
+
+        funList.put("mul", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            return calc(dst, src, '*');
+        });
+
+        funList.put("div", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            return calc(dst, src, '/');
+        });
+
+        funList.put("and", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            return calc(dst, src, '&');
+        });
+
+        funList.put("or", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            return calc(dst, src, '|');
+        });
+
+        funList.put("xor", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            return calc(dst, src, '^');
+        });
+
+        funList.put("not", (dst, src) -> {
+            if (src != null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            return calc(dst, null, '~');
+        });
+
+        funList.put("shl", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            return calc(dst, src, '<');
+        });
+
+        funList.put("shr", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            return calc(dst, src, '>');
+        });
+
+        funList.put("cmp", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (funList.get("mov").run(stateReg, dst) == Result.ERR)
+                return Result.ERR;
+            if (funList.get("sub").run(stateReg, src) == Result.ERR)
+                return Result.ERR;
+            return Result.OK;
+        });
+
+        funList.put("jmp", (dst, src) -> {
+            if (src != null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.type != RegType.STR) return Result.ERR;
+            if (!verifyWord((String) dst.data, WordType.TAG)) return Result.ERR;
+            String tag = (String) dst.data;
+            String segBuf, lineBuf;
+
+            for (int seg = 0; seg < code.keySet().size(); seg++) {
+                segBuf = ((String[]) code.keySet().toArray())[seg];
+                for (int line = 0; line < code.get(segBuf).length; line++) {
+                    lineBuf = code.get(segBuf)[line];
+                    if (tag.equals(lineBuf)) {
+                        tmpSeg = seg;
+                        tmpCnt = line;
+                        return Result.OK;
+                    }
+                }
+            }
+
+            return Result.ERR;
+        });
+
+        funList.put("jz", (dst, src) -> {
+            if (((float) stateReg.data) == 0) {
+                return funList.get("jmp").run(dst, src);
+            }
+            return Result.OK;
+        });
+
+        funList.put("jnz", (dst, src) -> {
+            if (((float) stateReg.data) != 0) {
+                return funList.get("jmp").run(dst, src);
+            }
+            return Result.OK;
+        });
+
+        funList.put("jg", (dst, src) -> {
+            if (((float) stateReg.data) > 0) {
+                return funList.get("jmp").run(dst, src);
+            }
+            return Result.OK;
+        });
+
+        funList.put("jl", (dst, src) -> {
+            if (((float) stateReg.data) < 0) {
+                return funList.get("jmp").run(dst, src);
+            }
+            return Result.OK;
+        });
+
+        funList.put("end", (dst, src) -> {
+            if (dst == null && src == null)
+                return Result.ETC;
+            return Result.ERR;
+        });
+
+        funList.put("nop", (dst, src) -> {
+            if (dst == null && src == null)
+                return Result.OK;
+            return Result.ERR;
+        });
+
+        funList.put("rst", (dst, src) -> {
+            if (dst == null && src == null) {
+                tmpSeg = 0;
+                tmpCnt = 0;
+                return Result.OK;
+            }
+            return Result.ERR;
+        });
+
+        funList.put("run", (dst, src) -> {
+            if (src != null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            String segBuf, target = (String) dst.data;
+            for (int seg = 0; seg < code.keySet().size(); seg++) {
+                segBuf = ((String[]) code.keySet().toArray())[seg];
+                if (target.equals(segBuf)) {
+                    tmpSeg = seg;
+                    tmpCnt = 0;
+                    return Result.OK;
+                }
+            }
+            return Result.ERR;
+        });
+
+        funList.put("call", (dst, src) -> {
+            if (src != null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            String segBuf, target = (String) dst.data;
+            for (int seg = 0; seg < code.keySet().size(); seg++) {
+                segBuf = ((String[]) code.keySet().toArray())[seg];
+                if (target.equals(segBuf)) {
+                    tmpSeg = seg;
+                    tmpCnt = 0;
+                    prevSeg = progSeg;
+                    prevCnt = progCnt;
+                    return Result.OK;
+                }
+            }
+            return Result.OK;
+        });
     }
 
 }

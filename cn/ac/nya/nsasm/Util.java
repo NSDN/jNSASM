@@ -4,9 +4,18 @@ import cn.ac.nya.nsasm.NSASM.*;
 
 import java.util.*;
 
+/**
+ * Created by drzzm on 2017.4.21.
+ */
 public class Util {
 
-    public static void print(Object value) { System.out.print(value); }
+    public static void print(Object value) {
+        System.out.print(value);
+    }
+
+    public static String scan() {
+        return new Scanner(System.in).nextLine();
+    }
 
     private static String cleanSymbol(String var, String symbol, String trash) {
         String tmp = var;
@@ -105,12 +114,8 @@ public class Util {
 
     }
 
-    public static void call(String path) {
-
-    }
-
     public static void console() {
-        print("Now in console mode.\n\n");
+        Util.print("Now in console mode.\n\n");
         String buf;
         int lines = 1; Result result;
 
@@ -118,24 +123,31 @@ public class Util {
         Scanner scanner = new Scanner(System.in);
 
         while (true) {
-            print(lines + " >>> ");
+            Util.print(lines + " >>> ");
             buf = scanner.nextLine();
             if (buf.length() == 0) {
                 lines += 1;
                 continue;
             }
             buf = formatCode(buf);
-            print("<" + buf + ">\n");
-            if (buf.contains("test")) continue;
+
+            if (buf.contains("#")) {
+                Util.print("<" + buf + ">\n");
+                continue;
+            }
             result = nsasm.execute(buf);
             if (result == Result.ERR) {
-                print("\nNSASM running error!\n");
-                print("At line " + lines + ": " + buf + "\n\n");
+                Util.print("\nNSASM running error!\n");
+                Util.print("At line " + lines + ": " + buf + "\n\n");
             } else if (result == Result.ETC) {
                 break;
             }
             lines += 1;
         }
+    }
+
+    public static void gui() {
+
     }
 
 }
