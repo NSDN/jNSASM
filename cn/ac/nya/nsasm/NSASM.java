@@ -273,7 +273,7 @@ public class NSASM {
 
             if (!backupReg.isEmpty()) {
                 progCnt = backupReg.pop();
-                progSeg = backupReg.pop() - 1;
+                progSeg = backupReg.pop();
             } else progCnt = 0;
         }
     }
