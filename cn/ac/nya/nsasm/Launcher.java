@@ -12,7 +12,7 @@ public class Launcher {
         Util.print("\n\n");
 
         if (args.length < 1) {
-            Util.print("Usage: nsasm [c/r] [FILE]\n\n");
+            Util.print("Usage: nsasm [c/r/g] [FILE]\n\n");
         } else {
             if (args.length == 2) {
                 if (args[0].equals("r")) {
@@ -24,7 +24,7 @@ public class Launcher {
                 Util.console();
                 return;
             }
-            if (args[0].equals("gui")) {
+            if (args[0].equals("g")) {
                 Util.gui();
                 return;
             }

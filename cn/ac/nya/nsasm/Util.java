@@ -202,6 +202,50 @@ public class Util {
         String[][] code = getSegments(str);
         NSASM nsasm = new NSASM(heap, stack, regs, code);
         nsasm.run();
+        print("\nNSASM running finished.\n\n");
+    }
+
+    public static void execute(String str) {
+        String path = "local";
+        if (str == null) return;
+
+        int heap = 64, stack = 32, regs = 16;
+
+        String conf = getSegment(str, ".<conf>");
+        if (conf == null) {
+            print("Conf load error.\n");
+            print("At file: " + path + "\n\n");
+            return;
+        }
+        if (!conf.isEmpty()) {
+            Scanner confReader = new Scanner(conf);
+            try {
+                String buf;
+                while (confReader.hasNextLine()) {
+                    buf = confReader.nextLine();
+                    switch (buf.split(" ")[0]) {
+                        case "heap":
+                            heap = Integer.valueOf(buf.split(" ")[1]);
+                            break;
+                        case "stack":
+                            stack = Integer.valueOf(buf.split(" ")[1]);
+                            break;
+                        case "reg":
+                            regs = Integer.valueOf(buf.split(" ")[1]);
+                            break;
+                    }
+                }
+            } catch (Exception e) {
+                print("Conf load error.\n");
+                print("At file: " + path + "\n\n");
+                return;
+            }
+        }
+
+        String[][] code = getSegments(str);
+        NSASM nsasm = new NSASM(heap, stack, regs, code);
+        nsasm.run();
+        print("\nNSASM running finished.\n\n");
     }
 
     public static void console() {
@@ -237,7 +281,7 @@ public class Util {
     }
 
     public static void gui() {
-
+        new Editor().show();
     }
 
 }
