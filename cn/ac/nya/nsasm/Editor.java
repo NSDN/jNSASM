@@ -67,7 +67,7 @@ public class Editor extends Application {
                     break;
                 case "\r":
                     for (int i = 0; i < tabCnt; i++)
-                        area.appendText("\t");
+                        area.insertText(area.getCaretPosition(), "\t");
                     break;
             }
             tabCntLabel.setText("Tab count: " + tabCnt);

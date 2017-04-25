@@ -204,6 +204,7 @@ public class NSASM {
         Register dr = null, sr = null;
 
         operator = var.split(" ")[0];
+        operator = operator.toLowerCase(); //To lower case
         if (operator.length() + 1 < var.length()) {
             if (
                 operator.equals("var") || operator.equals("int") ||
@@ -266,13 +267,13 @@ public class NSASM {
                     Util.print("At "+ segBuf + ", line " + (progCnt + 1) + ": " + codeBuf + "\n\n");
                     return;
                 } else if (result == Result.ETC) {
-                    break;
+                    return;
                 }
             }
 
             if (!backupReg.isEmpty()) {
-                progCnt = backupReg.pop();
-                progSeg = backupReg.pop();
+                progCnt = backupReg.pop() + 1;
+                progSeg = backupReg.pop() - 1;
             } else progCnt = 0;
         }
     }
