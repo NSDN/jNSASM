@@ -509,62 +509,67 @@ public class NSASM {
         });
 
         funList.put("in", (dst, src) -> {
-            if (src == null) return Result.ERR;
+            if (src == null) {
+                src = new Register();
+                src.type = RegType.INT;
+                src.data = 0x00;
+                src.readOnly = true;
+            };
             if (dst == null) return Result.ERR;
             String buf; Register reg;
-            switch ((int) dst.data) {
+            switch ((int) src.data) {
                 case 0x00:
-                    if (src.readOnly && src.type != RegType.STR) return Result.ERR;
+                    if (dst.readOnly && dst.type != RegType.STR) return Result.ERR;
                     buf = Util.scan();
-                    switch (src.type) {
+                    switch (dst.type) {
                         case INT:
                             reg = getRegister(buf);
                             if (reg == null) return Result.OK;
                             if (reg.type != RegType.INT) return Result.OK;
-                            src.data = reg.data;
+                            dst.data = reg.data;
                             break;
                         case CHAR:
                             if (buf.length() < 1) return Result.OK;
-                            src.data = buf.charAt(0);
+                            dst.data = buf.charAt(0);
                             break;
                         case FLOAT:
                             reg = getRegister(buf);
                             if (reg == null) return Result.OK;
                             if (reg.type != RegType.FLOAT) return Result.OK;
-                            src.data = reg.data;
+                            dst.data = reg.data;
                             break;
                         case STR:
                             if (buf.length() < 1) return Result.OK;
-                            src.data = buf;
-                            src.strPtr = 0;
+                            dst.data = buf;
+                            dst.strPtr = 0;
                             break;
                     }
                     break;
                 case 0xFF:
                     Util.print("[DEBUG] <<< ");
-                    if (src.readOnly && src.type != RegType.STR) return Result.ERR;
+                    if (dst.readOnly && dst.type != RegType.STR) return Result.ERR;
                     buf = Util.scan();
-                    switch (src.type) {
+                    switch (dst.type) {
                         case INT:
                             reg = getRegister(buf);
                             if (reg == null) return Result.OK;
                             if (reg.type != RegType.INT) return Result.OK;
-                            src.data = reg.data;
+                            dst.data = reg.data;
                             break;
                         case CHAR:
                             if (buf.length() < 1) return Result.OK;
-                            src.data = buf.charAt(0);
+                            dst.data = buf.charAt(0);
                             break;
                         case FLOAT:
                             reg = getRegister(buf);
                             if (reg == null) return Result.OK;
                             if (reg.type != RegType.FLOAT) return Result.OK;
-                            src.data = reg.data;
+                            dst.data = reg.data;
                             break;
                         case STR:
                             if (buf.length() < 1) return Result.OK;
-                            src.data = buf;
-                            src.strPtr = 0;
+                            dst.data = buf;
+                            dst.strPtr = 0;
                             break;
                     }
                     break;

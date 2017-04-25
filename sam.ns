@@ -55,7 +55,7 @@ run <sam>
 	prt "Input 0 or 1 to choose route."
 	out 0, "GO: "
 	mov r0, 0
-	in 0, r0
+	in r0
 	cmp r0, 0
 	jg [NEXT]
 	jmp [END]
