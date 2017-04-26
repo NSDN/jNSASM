@@ -514,7 +514,7 @@ public class NSASM {
                 src.type = RegType.INT;
                 src.data = 0x00;
                 src.readOnly = true;
-            };
+            }
             if (dst == null) return Result.ERR;
             String buf; Register reg;
             switch ((int) src.data) {

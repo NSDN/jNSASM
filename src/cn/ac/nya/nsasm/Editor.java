@@ -47,6 +47,9 @@ public class Editor extends Application {
             int pos = area.getCaretPosition();
             switch (event.getCharacter()) {
                 case "\b":
+                    if (pos == 0 && area.getText().isEmpty()) {
+                        tabCnt = tabCnt > 0 ? tabCnt - 1 : 0;
+                    }
                     while (pos > 0 && (
                                 area.getText().charAt(pos - 1) == '\t' ||
                                 area.getText().charAt(pos - 1) == '\n'
