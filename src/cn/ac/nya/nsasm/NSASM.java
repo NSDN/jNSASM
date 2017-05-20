@@ -7,7 +7,7 @@ import java.util.*;
  */
 public class NSASM {
 
-    public static final String version = "0.2 (Java)";
+    public static final String version = "0.20 (Java)";
 
     protected enum RegType {
         CHAR, STR, INT, FLOAT
