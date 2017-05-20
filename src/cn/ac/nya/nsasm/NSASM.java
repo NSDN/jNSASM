@@ -220,12 +220,20 @@ public class NSASM {
                 dr.readOnly = true; dr.type = RegType.STR; dr.data = dst;
                 sr = getRegister(src);
             } else { //Normal code
-                dst = var.substring(operator.length() + 1).split(",")[0];
-                if (var.length() <= operator.length() + 1 + dst.length())
+                if (
+                    verifyWord(var.substring(operator.length() + 1), WordType.STR) ||
+                    verifyWord(var.substring(operator.length() + 1), WordType.CHAR)
+                ) {
+                    dst = var.substring(operator.length() + 1);
                     src = "";
-                else if (var.charAt(operator.length() + 1 + dst.length()) == ',')
-                    src = var.substring(operator.length() + 1 + dst.length() + 1);
-                else src = "";
+                } else {
+                    dst = var.substring(operator.length() + 1).split(",")[0];
+                    if (var.length() <= operator.length() + 1 + dst.length())
+                        src = "";
+                    else if (var.charAt(operator.length() + 1 + dst.length()) == ',')
+                        src = var.substring(operator.length() + 1 + dst.length() + 1);
+                    else src = "";
+                }
                 dr = getRegister(dst);
                 sr = getRegister(src);
             }
