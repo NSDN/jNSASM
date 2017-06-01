@@ -7,17 +7,17 @@ import java.util.*;
  */
 public class NSASM {
 
-    public static final String version = "0.2 (Java)";
+    public static final String version = "0.20 (Java)";
 
-    private enum RegType {
+    protected enum RegType {
         CHAR, STR, INT, FLOAT
     }
 
-    private class Register {
-        RegType type;
-        Object data;
-        int strPtr = 0;
-        boolean readOnly;
+    protected class Register {
+        public RegType type;
+        public Object data;
+        public int strPtr = 0;
+        public boolean readOnly;
 
         @Override
         public String toString() {
@@ -34,21 +34,21 @@ public class NSASM {
         }
     }
 
-    private interface Operator {
+    protected interface Operator {
         Result run(Register dst, Register src);
     }
 
     private LinkedHashMap<String, Register> heapManager;
     private LinkedList<Register> stackManager;
     private int stackSize;
-    private Register[] regGroup;
+    protected Register[] regGroup;
     private Register stateReg;
 
     private LinkedList<Integer> backupReg;
     private int progSeg, tmpSeg;
     private int progCnt, tmpCnt;
 
-    private LinkedHashMap<String, Operator> funList;
+    protected LinkedHashMap<String, Operator> funList;
     private LinkedHashMap<String, String[]> code;
 
     public enum Result {
@@ -220,12 +220,20 @@ public class NSASM {
                 dr.readOnly = true; dr.type = RegType.STR; dr.data = dst;
                 sr = getRegister(src);
             } else { //Normal code
-                dst = var.substring(operator.length() + 1).split(",")[0];
-                if (var.length() <= operator.length() + 1 + dst.length())
+                if (
+                    verifyWord(var.substring(operator.length() + 1), WordType.STR) ||
+                    verifyWord(var.substring(operator.length() + 1), WordType.CHAR)
+                ) {
+                    dst = var.substring(operator.length() + 1);
                     src = "";
-                else if (var.charAt(operator.length() + 1 + dst.length()) == ',')
-                    src = var.substring(operator.length() + 1 + dst.length() + 1);
-                else src = "";
+                } else {
+                    dst = var.substring(operator.length() + 1).split(",")[0];
+                    if (var.length() <= operator.length() + 1 + dst.length())
+                        src = "";
+                    else if (var.charAt(operator.length() + 1 + dst.length()) == ',')
+                        src = var.substring(operator.length() + 1 + dst.length() + 1);
+                    else src = "";
+                }
                 dr = getRegister(dst);
                 sr = getRegister(src);
             }
@@ -416,7 +424,7 @@ public class NSASM {
         return Result.OK;
     }
 
-    private void loadFunList() {
+    protected void loadFunList() {
         funList.put("rem", (dst, src) -> {
             return Result.OK;
         });
