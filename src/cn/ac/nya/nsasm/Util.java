@@ -154,6 +154,7 @@ public class Util {
         try {
             while (reader.ready())
                 str = str.concat(reader.readLine() + "\n");
+            reader.close();
         } catch (Exception e) {
             print("File read error.\n");
             print("At file: " + path + "\n\n");
@@ -253,7 +254,8 @@ public class Util {
         String buf;
         int lines = 1; Result result;
 
-        NSASM nsasm = new NSASM(64,32, 16, null);
+        String[][] code = getSegments("nop\n"); //ld func allowed
+        NSASM nsasm = new NSASM(64,32, 16, code);
         Scanner scanner = new Scanner(System.in);
 
         while (true) {
@@ -269,6 +271,7 @@ public class Util {
                 Util.print("<" + buf + ">\n");
                 continue;
             }
+
             result = nsasm.execute(buf);
             if (result == Result.ERR) {
                 Util.print("\nNSASM running error!\n");
@@ -276,6 +279,10 @@ public class Util {
             } else if (result == Result.ETC) {
                 break;
             }
+            if (buf.startsWith("run") || buf.startsWith("call")) {
+                nsasm.run();
+            }
+
             lines += 1;
         }
     }
