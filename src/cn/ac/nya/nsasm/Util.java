@@ -75,6 +75,16 @@ public class Util {
         return left + right;
     }
 
+    public static String repairBrackets(String var, String left, String right) {
+        while (var.contains('\n' + left))
+            var = var.replace('\n' + left, left);
+        var = var.replace(left, left + '\n');
+        var = var.replace(right, '\n' + right);
+        while (var.contains("\n\n"))
+            var = var.replace("\n\n", "\n");
+        return var;
+    }
+
     public static String[][] getSegments(String var) {
         LinkedHashMap<String, String> segBuf = new LinkedHashMap<>();
         String varBuf = ""; Scanner scanner = new Scanner(var);
@@ -86,6 +96,9 @@ public class Util {
         while (varBuf.contains("\n\n")) {
             varBuf = varBuf.replace("\n\n", "\n");
         }
+        varBuf = repairBrackets(varBuf, "{", "}");
+        varBuf = repairBrackets(varBuf, "(", ")");
+
         scanner = new Scanner(varBuf);
 
         String head, body = "", tmp;
