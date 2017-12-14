@@ -85,6 +85,55 @@ public class Util {
         return var;
     }
 
+    public static String encodeLambda(String var) {
+        return var.replace("\n", "\f");
+    }
+
+    public static String decodeLambda(String var) {
+        return var.replace("\f", "\n");
+    }
+
+    public static String formatLambda(String var) {
+        final int IDLE = 0, RUN = 1, DONE = 2;
+        int state = IDLE, count = 0, begin = 0, end = 0;
+
+        for (int i = 0; i < var.length(); i++) {
+            switch (state) {
+                case IDLE:
+                    count = begin = end = 0;
+                    if (var.charAt(i) == '(') {
+                        begin = i;
+                        count += 1;
+                        state = RUN;
+                    }
+                    break;
+                case RUN:
+                    if (var.charAt(i) == '(')
+                        count += 1;
+                    else if (var.charAt(i) == ')')
+                        count -= 1;
+                    if (count == 0) {
+                        end = i;
+                        state = DONE;
+                    }
+                    break;
+                case DONE:
+                    String a, b, c;
+                    a = var.substring(0, begin);
+                    b = var.substring(begin, end + 1);
+                    c = var.substring(end + 1);
+                    b = encodeLambda(b);
+                    var = a + b + c;
+                    state = IDLE;
+                    break;
+                default:
+                    return var;
+            }
+        }
+
+        return var;
+    }
+
     public static String[][] getSegments(String var) {
         LinkedHashMap<String, String> segBuf = new LinkedHashMap<>();
         String varBuf = ""; Scanner scanner = new Scanner(var);
@@ -98,6 +147,8 @@ public class Util {
         }
         varBuf = repairBrackets(varBuf, "{", "}");
         varBuf = repairBrackets(varBuf, "(", ")");
+
+        varBuf = formatLambda(varBuf);
 
         scanner = new Scanner(varBuf);
 

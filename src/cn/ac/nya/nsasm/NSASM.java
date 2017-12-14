@@ -7,10 +7,10 @@ import java.util.*;
  */
 public class NSASM {
 
-    public static final String version = "0.30 (Java)";
+    public static final String version = "0.40 (Java)";
 
     protected enum RegType {
-        CHAR, STR, INT, FLOAT
+        CHAR, STR, INT, FLOAT, CODE
     }
 
     protected class Register {
@@ -48,7 +48,7 @@ public class NSASM {
     private int progSeg, tmpSeg;
     private int progCnt, tmpCnt;
 
-    protected LinkedHashMap<String, Operator> funList;
+    protected LinkedHashMap<String, Operator> funcList;
     private LinkedHashMap<String, String[]> code;
 
     public enum Result {
@@ -57,7 +57,8 @@ public class NSASM {
 
     private enum WordType {
         REG, CHAR, STR, INT,
-        FLOAT, VAR, TAG, SEG
+        FLOAT, VAR, TAG, SEG,
+        CODE
     }
 
     private boolean verifyBound(String var, char left, char right) {
@@ -91,15 +92,17 @@ public class NSASM {
                     (var.charAt(0) >= '0' && var.charAt(0) <= '9') ||
                     var.charAt(0) == '-' || var.charAt(0) == '+'
                 ) && (!var.startsWith("0x") || !var.startsWith("0X"));
-            case VAR:
-                return !verifyWord(var, WordType.REG) && !verifyWord(var, WordType.CHAR) &&
-                       !verifyWord(var, WordType.STR) && !verifyWord(var, WordType.INT) &&
-                       !verifyWord(var, WordType.FLOAT) && !verifyWord(var, WordType.TAG) &&
-                       !verifyWord(var, WordType.SEG);
             case TAG:
                 return verifyBound(var, '[', ']');
             case SEG:
                 return verifyBound(var, '<', '>');
+            case CODE:
+                return verifyBound(var, '(', ')');
+            case VAR:
+                return !verifyWord(var, WordType.REG) && !verifyWord(var, WordType.CHAR) &&
+                    !verifyWord(var, WordType.STR) && !verifyWord(var, WordType.INT) &&
+                    !verifyWord(var, WordType.FLOAT) && !verifyWord(var, WordType.TAG) &&
+                    !verifyWord(var, WordType.SEG) && !verifyWord(var, WordType.CODE);
         }
         return false;
     }
@@ -124,6 +127,8 @@ public class NSASM {
                 if (var.charAt(1) == '\\') {
                     if (var.length() < 4) return null;
                     switch (var.charAt(2)) {
+                        case '0': tmp = '\0'; break;
+                        case 'b': tmp = '\b'; break;
                         case 'n': tmp = '\n'; break;
                         case 'r': tmp = '\r'; break;
                         case 't': tmp = '\t'; break;
@@ -197,6 +202,10 @@ public class NSASM {
                 register.type = RegType.STR;
                 register.readOnly = true;
                 register.data = var;
+            } else if (verifyWord(var, WordType.CODE)) {
+                register.type = RegType.CODE;
+                register.readOnly = true;
+                register.data = var;
             } else return null;
             return register;
         }
@@ -212,7 +221,7 @@ public class NSASM {
             if (
                 operator.equals("var") || operator.equals("int") ||
                 operator.equals("char") || operator.equals("float") ||
-                operator.equals("str")
+                operator.equals("str") || operator.equals("code")
             ) { //Variable define
                 dst = var.substring(operator.length() + 1).split("=")[0];
                 if (var.length() <= operator.length() + 1 + dst.length()) return Result.ERR;
@@ -242,10 +251,10 @@ public class NSASM {
             }
         }
 
-        if (!funList.containsKey(operator))
+        if (!funcList.containsKey(operator))
             return verifyWord(operator, WordType.TAG) ? Result.OK : Result.ERR;
 
-        return funList.get(operator).run(dr, sr);
+        return funcList.get(operator).run(dr, sr);
     }
 
     public void run() {
@@ -347,8 +356,8 @@ public class NSASM {
             regGroup[i].data = 0;
         }
 
-        funList = new LinkedHashMap<>();
-        loadFunList();
+        funcList = new LinkedHashMap<>();
+        loadFuncList();
 
         this.code = new LinkedHashMap<>();
         if (appendCode(code) == Result.ERR) {
@@ -420,6 +429,8 @@ public class NSASM {
             case '-': dst.strPtr = dst.strPtr - (int) convValue(src.data, RegType.INT); break;
             default: return Result.ERR;
         }
+        if (dst.strPtr >= dst.data.toString().length()) dst.strPtr = dst.data.toString().length() - 1;
+        if (dst.strPtr < 0) dst.strPtr = 0;
         return Result.OK;
     }
 
@@ -437,12 +448,12 @@ public class NSASM {
         return Result.OK;
     }
 
-    protected void loadFunList() {
-        funList.put("rem", (dst, src) -> {
+    protected void loadFuncList() {
+        funcList.put("rem", (dst, src) -> {
             return Result.OK;
         });
 
-        funList.put("var", (dst, src) -> {
+        funcList.put("var", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (!verifyWord((String) dst.data, WordType.VAR)) return Result.ERR;
@@ -452,51 +463,67 @@ public class NSASM {
             return Result.OK;
         });
 
-        funList.put("int", (dst, src) -> {
+        funcList.put("int", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (!verifyWord((String) dst.data, WordType.VAR)) return Result.ERR;
             if (heapManager.containsKey((String) dst.data)) return Result.ERR;
-            if (src.type != RegType.STR) src.readOnly = false;
             if (src.type != RegType.INT) return Result.ERR;
+
+            src.readOnly = false;
             heapManager.put((String) dst.data, src);
             return Result.OK;
         });
 
-        funList.put("char", (dst, src) -> {
+        funcList.put("char", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (!verifyWord((String) dst.data, WordType.VAR)) return Result.ERR;
             if (heapManager.containsKey((String) dst.data)) return Result.ERR;
-            if (src.type != RegType.STR) src.readOnly = false;
             if (src.type != RegType.CHAR) return Result.ERR;
+
+            src.readOnly = false;
             heapManager.put((String) dst.data, src);
             return Result.OK;
         });
 
-        funList.put("float", (dst, src) -> {
+        funcList.put("float", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (!verifyWord((String) dst.data, WordType.VAR)) return Result.ERR;
             if (heapManager.containsKey((String) dst.data)) return Result.ERR;
-            if (src.type != RegType.STR) src.readOnly = false;
             if (src.type != RegType.FLOAT) return Result.ERR;
+
+            src.readOnly = false;
             heapManager.put((String) dst.data, src);
             return Result.OK;
         });
 
-        funList.put("str", (dst, src) -> {
+        funcList.put("str", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (!verifyWord((String) dst.data, WordType.VAR)) return Result.ERR;
             if (heapManager.containsKey((String) dst.data)) return Result.ERR;
-            if (src.type != RegType.STR) src.readOnly = false;
             if (src.type != RegType.STR) return Result.ERR;
+
+            src.readOnly = true;
             heapManager.put((String) dst.data, src);
             return Result.OK;
         });
 
-        funList.put("mov", (dst, src) -> {
+        funcList.put("code", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (!verifyWord((String) dst.data, WordType.VAR)) return Result.ERR;
+            if (heapManager.containsKey((String) dst.data)) return Result.ERR;
+            if (src.type != RegType.CODE) return Result.ERR;
+
+            src.readOnly = false;
+            heapManager.put((String) dst.data, src);
+            return Result.OK;
+        });
+
+        funcList.put("mov", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
@@ -513,7 +540,7 @@ public class NSASM {
             return Result.OK;
         });
 
-        funList.put("push", (dst, src) -> {
+        funcList.put("push", (dst, src) -> {
             if (src != null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (stackManager.size() >= stackSize) return Result.ERR;
@@ -521,7 +548,7 @@ public class NSASM {
             return Result.OK;
         });
 
-        funList.put("pop", (dst, src) -> {
+        funcList.put("pop", (dst, src) -> {
             if (src != null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
@@ -529,7 +556,7 @@ public class NSASM {
             return Result.OK;
         });
 
-        funList.put("in", (dst, src) -> {
+        funcList.put("in", (dst, src) -> {
             if (src == null) {
                 src = new Register();
                 src.type = RegType.INT;
@@ -600,29 +627,44 @@ public class NSASM {
             return Result.OK;
         });
 
-        funList.put("out", (dst, src) -> {
-            if (src == null) return Result.ERR;
+        funcList.put("out", (dst, src) -> {
             if (dst == null) return Result.ERR;
-            switch ((int) dst.data) {
-                case 0x00:
-                    if (src.type == RegType.STR) {
-                        Util.print(((String) src.data).substring(src.strPtr));
-                    } else Util.print(src.data);
-                    break;
-                case 0xFF:
-                    Util.print("[DEBUG] >>> ");
-                    if (src.type == RegType.STR) {
-                        Util.print(((String) src.data).substring(src.strPtr));
-                    } else Util.print(src.data);
-                    break;
-                default:
+            if (src == null) {
+                if (dst.type == RegType.STR) {
+                    Util.print(((String) dst.data).substring(dst.strPtr));
+                } else Util.print(dst.data);
+            } else {
+                if (dst.type != RegType.INT)
                     return Result.ERR;
+                switch ((int) dst.data) {
+                    case 0x00:
+                        if (src.type == RegType.STR) {
+                            Util.print(((String) src.data).substring(src.strPtr));
+                        } else Util.print(src.data);
+                        break;
+                    case 0xFF:
+                        Util.print("[DEBUG] >>> ");
+                        if (src.type == RegType.STR) {
+                            Util.print(((String) src.data).substring(src.strPtr));
+                        } else Util.print(src.data);
+                        Util.print('\n');
+                        break;
+                    default:
+                        return Result.ERR;
+                }
             }
             return Result.OK;
         });
 
-        funList.put("prt", (dst, src) -> {
-            if (src != null) return Result.ERR;
+        funcList.put("prt", (dst, src) -> {
+            if (src != null) {
+                if (dst.type == RegType.STR) {
+                    if (dst.readOnly) return Result.ERR;
+                    if (src.type != RegType.STR) return Result.ERR;
+                    dst.data = dst.data.toString().concat(src.data.toString() + '\n');
+                } else return Result.ERR;
+                return Result.OK;
+            }
             if (dst == null) return Result.ERR;
             if (dst.type == RegType.STR) {
                 Util.print(((String) dst.data).substring(dst.strPtr) + '\n');
@@ -630,14 +672,14 @@ public class NSASM {
             return Result.OK;
         });
 
-        funList.put("add", (dst, src) -> {
+        funcList.put("add", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
             return calc(dst, src, '+');
         });
 
-        funList.put("inc", (dst, src) -> {
+        funcList.put("inc", (dst, src) -> {
             if (src != null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
@@ -648,14 +690,14 @@ public class NSASM {
             return calc(dst, register, '+');
         });
 
-        funList.put("sub", (dst, src) -> {
+        funcList.put("sub", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
             return calc(dst, src, '-');
         });
 
-        funList.put("dec", (dst, src) -> {
+        funcList.put("dec", (dst, src) -> {
             if (src != null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
@@ -666,73 +708,85 @@ public class NSASM {
             return calc(dst, register, '-');
         });
 
-        funList.put("mul", (dst, src) -> {
+        funcList.put("mul", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
             return calc(dst, src, '*');
         });
 
-        funList.put("div", (dst, src) -> {
+        funcList.put("div", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
             return calc(dst, src, '/');
         });
 
-        funList.put("and", (dst, src) -> {
+        funcList.put("and", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
             return calc(dst, src, '&');
         });
 
-        funList.put("or", (dst, src) -> {
+        funcList.put("or", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
             return calc(dst, src, '|');
         });
 
-        funList.put("xor", (dst, src) -> {
+        funcList.put("xor", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
             return calc(dst, src, '^');
         });
 
-        funList.put("not", (dst, src) -> {
+        funcList.put("not", (dst, src) -> {
             if (src != null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
             return calc(dst, null, '~');
         });
 
-        funList.put("shl", (dst, src) -> {
+        funcList.put("shl", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
             return calc(dst, src, '<');
         });
 
-        funList.put("shr", (dst, src) -> {
+        funcList.put("shr", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
             return calc(dst, src, '>');
         });
 
-        funList.put("cmp", (dst, src) -> {
+        funcList.put("cmp", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
-            if (funList.get("mov").run(stateReg, dst) == Result.ERR)
+            if (funcList.get("mov").run(stateReg, dst) == Result.ERR)
                 return Result.ERR;
-            if (funList.get("sub").run(stateReg, src) == Result.ERR)
+            if (funcList.get("sub").run(stateReg, src) == Result.ERR)
                 return Result.ERR;
             return Result.OK;
         });
 
-        funList.put("jmp", (dst, src) -> {
+        funcList.put("test", (dst, src) -> {
+            if (src != null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (funcList.get("mov").run(stateReg, dst) == Result.ERR)
+                return Result.ERR;
+            Register reg = new Register();
+            reg.type = dst.type; reg.readOnly = false; reg.data = 0;
+            if (funcList.get("sub").run(stateReg, reg) == Result.ERR)
+                return Result.ERR;
+            return Result.OK;
+        });
+
+        funcList.put("jmp", (dst, src) -> {
             if (src != null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.type != RegType.STR) return Result.ERR;
@@ -756,47 +810,47 @@ public class NSASM {
             return Result.ERR;
         });
 
-        funList.put("jz", (dst, src) -> {
+        funcList.put("jz", (dst, src) -> {
             if ((float) convValue(stateReg.data, RegType.FLOAT) == 0) {
-                return funList.get("jmp").run(dst, src);
+                return funcList.get("jmp").run(dst, src);
             }
             return Result.OK;
         });
 
-        funList.put("jnz", (dst, src) -> {
+        funcList.put("jnz", (dst, src) -> {
             if ((float) convValue(stateReg.data, RegType.FLOAT) != 0) {
-                return funList.get("jmp").run(dst, src);
+                return funcList.get("jmp").run(dst, src);
             }
             return Result.OK;
         });
 
-        funList.put("jg", (dst, src) -> {
+        funcList.put("jg", (dst, src) -> {
             if ((float) convValue(stateReg.data, RegType.FLOAT) > 0) {
-                return funList.get("jmp").run(dst, src);
+                return funcList.get("jmp").run(dst, src);
             }
             return Result.OK;
         });
 
-        funList.put("jl", (dst, src) -> {
+        funcList.put("jl", (dst, src) -> {
             if ((float) convValue(stateReg.data, RegType.FLOAT) < 0) {
-                return funList.get("jmp").run(dst, src);
+                return funcList.get("jmp").run(dst, src);
             }
             return Result.OK;
         });
 
-        funList.put("end", (dst, src) -> {
+        funcList.put("end", (dst, src) -> {
             if (dst == null && src == null)
                 return Result.ETC;
             return Result.ERR;
         });
 
-        funList.put("nop", (dst, src) -> {
+        funcList.put("nop", (dst, src) -> {
             if (dst == null && src == null)
                 return Result.OK;
             return Result.ERR;
         });
 
-        funList.put("rst", (dst, src) -> {
+        funcList.put("rst", (dst, src) -> {
             if (dst == null && src == null) {
                 tmpSeg = 0;
                 tmpCnt = 0;
@@ -805,7 +859,7 @@ public class NSASM {
             return Result.ERR;
         });
 
-        funList.put("run", (dst, src) -> {
+        funcList.put("run", (dst, src) -> {
             if (src != null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.type != RegType.STR) return Result.ERR;
@@ -822,7 +876,7 @@ public class NSASM {
             return Result.ERR;
         });
 
-        funList.put("call", (dst, src) -> {
+        funcList.put("call", (dst, src) -> {
             if (src != null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.type != RegType.STR) return Result.ERR;
@@ -841,7 +895,7 @@ public class NSASM {
             return Result.OK;
         });
 
-        funList.put("ld", (dst, src) -> {
+        funcList.put("ld", (dst, src) -> {
             if (src != null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.type != RegType.STR) return Result.ERR;
@@ -853,6 +907,16 @@ public class NSASM {
                 Util.print("At file: " + path + "\n");
                 return Result.ERR;
             }
+            return Result.OK;
+        });
+
+        funcList.put("eval", (dst, src) -> {
+            if (src != null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.type != RegType.CODE) return Result.ERR;
+            String code = dst.data.toString().substring(1, dst.data.toString().length() - 1);
+            code = Util.decodeLambda(code);
+            new NSASM(heapManager.size(), stackSize, regGroup.length, Util.getSegments(code)).run();
             return Result.OK;
         });
     }
