@@ -93,6 +93,12 @@ public class Util {
         return var.replace("\f", "\n");
     }
 
+    public static String formatString(String var) {
+        return var.replace("\\\"", "\"").replace("\\\'", "\'")
+                .replace("\\\\", "\\").replace("\\n", "\n")
+                .replace("\\t", "\t");
+    }
+
     public static String formatLambda(String var) {
         final int IDLE = 0, RUN = 1, DONE = 2;
         int state = IDLE, count = 0, begin = 0, end = 0;

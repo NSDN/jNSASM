@@ -158,9 +158,18 @@ public class NSASM {
                 } catch (Exception e) {
                     return null;
                 }
-                tmp = tmp.replace("\\\"", "\"").replace("\\\'", "\'")
-                        .replace("\\\\", "\\").replace("\\\n", "\n")
-                        .replace("\\\t", "\t");
+
+                if (tmp.contains("\"")) {
+                    String[] parts = tmp.split("\\\\\"");
+                    String a = parts[0], b = "", c = parts[parts.length - 1];
+                    for (int i = 1; i < parts.length - 1; i++)
+                        b = b.concat(parts[i]);
+                    a = Util.formatString(a); c = Util.formatString(c);
+                    tmp = a + "\"" + b + "\"" + c;
+                } else {
+                    tmp = Util.formatString(tmp);
+                }
+
                 register.type = RegType.STR;
                 register.readOnly = true;
                 register.data = tmp;
@@ -701,8 +710,6 @@ public class NSASM {
             if (src != null) {
                 if (dst.type == RegType.STR) {
                     if (dst.readOnly) return Result.ERR;
-                    if (src.type != RegType.STR && src.type != RegType.CHAR)
-                        return Result.ERR;
                     if (src.type == RegType.CHAR && src.data.equals('\b')) {
                         if (dst.data.toString().contains("\n")) {
                             String[] parts = dst.data.toString().split("\n");
@@ -712,13 +719,15 @@ public class NSASM {
                                 if (i < parts.length - 2) res = res.concat("\n");
                             }
                         }
-                    } else {
+                    } else if (src.type == RegType.CODE) {
+                        Register register = eval(src);
+                        if (register == null) return Result.ERR;
+                        dst.data = dst.data.toString().concat('\n' + register.data.toString());
+                    } else if (src.type == RegType.STR) {
                         dst.data = dst.data.toString().concat('\n' + src.data.toString());
-                    }
+                    } else return Result.ERR;
                 } else if (dst.type == RegType.CODE) {
                     if (dst.readOnly) return Result.ERR;
-                    if (src.type != RegType.STR && src.type != RegType.CHAR)
-                        return Result.ERR;
                     if (src.type == RegType.CHAR && src.data.equals('\b')) {
                         if (dst.data.toString().contains("\n")) {
                             String[] parts = dst.data.toString().split("\n");
@@ -728,20 +737,22 @@ public class NSASM {
                                 if (i < parts.length - 2) res = res.concat("\n");
                             }
                         }
-                    } else {
+                    } else if (src.type == RegType.CODE) {
                         dst.data = dst.data.toString().concat('\n' + src.data.toString());
-                    }
+                    } else if (src.type == RegType.STR) {
+                        dst.data = dst.data.toString().concat('\n' + src.data.toString());
+                    } else return Result.ERR;
                 } else return Result.ERR;
-                return Result.OK;
+            } else {
+                if (dst == null) return Result.ERR;
+                if (dst.type == RegType.STR) {
+                    Util.print(((String) dst.data).substring(dst.strPtr) + '\n');
+                } else if (dst.type == RegType.CODE) {
+                    Register register = eval(dst);
+                    if (register == null) return Result.ERR;
+                    Util.print(register.data.toString() + '\n');
+                } else Util.print(dst.data.toString() + '\n');
             }
-            if (dst == null) return Result.ERR;
-            if (dst.type == RegType.STR) {
-                Util.print(((String) dst.data).substring(dst.strPtr) + '\n');
-            } else if (dst.type == RegType.CODE) {
-                Register register = eval(dst);
-                if (register == null) return Result.ERR;
-                Util.print(register.data.toString() + '\n');
-            } else Util.print(dst.data.toString() + '\n');
             return Result.OK;
         });
 
