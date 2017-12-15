@@ -339,12 +339,11 @@ public class Util {
         int lines = 1; Result result;
 
         String[][] code = getSegments("nop\n"); //ld func allowed
-        NSASM nsasm = new NSASM(64,32, 16, code);
-        Scanner scanner = new Scanner(System.in);
+        NSASM nsasm = new NSASM(64, 32, 16, code);
 
         while (true) {
             Util.print(lines + " >>> ");
-            buf = scanner.nextLine();
+            buf = scan();
             if (buf.length() == 0) {
                 lines += 1;
                 continue;
