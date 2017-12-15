@@ -7,7 +7,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4b3e3122-5df7-4601-9c9d-ddf87614d578" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/cn/ac/nya/nsasm/NSASM.java" afterPath="$PROJECT_DIR$/src/cn/ac/nya/nsasm/NSASM.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java" afterPath="$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
@@ -26,11 +26,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="NSASM.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="NSASM.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/NSASM.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2250">
-              <caret line="1063" column="0" lean-forward="true" selection-start-line="1063" selection-start-column="0" selection-end-line="1063" selection-end-column="0" />
+            <state relative-caret-position="149">
+              <caret line="274" column="0" lean-forward="true" selection-start-line="274" selection-start-column="0" selection-end-line="274" selection-end-column="0" />
               <folding>
                 <element signature="docComment;class#NSASM#0" expanded="false" />
                 <element signature="class#RegType#0;class#NSASM#0" expanded="false" />
@@ -57,6 +57,7 @@
                 <element signature="method#calcFloat#0;class#NSASM#0" expanded="false" />
                 <element signature="method#calcStr#0;class#NSASM#0" expanded="false" />
                 <element signature="method#calc#0;class#NSASM#0" expanded="false" />
+                <element signature="method#loadFuncList#0;class#NSASM#0" expanded="false" />
                 <element signature="e#19955#20010#0" expanded="false" />
                 <element signature="e#20042#20469#0" expanded="false" />
                 <element signature="e#20501#20960#0" expanded="false" />
@@ -102,14 +103,16 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Util.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="Util.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="225">
-              <caret line="93" column="5" lean-forward="true" selection-start-line="93" selection-start-column="5" selection-end-line="93" selection-end-column="5" />
+            <state relative-caret-position="1830">
+              <caret line="237" column="13" lean-forward="true" selection-start-line="237" selection-start-column="13" selection-end-line="237" selection-end-column="13" />
               <folding>
-                <element signature="e#3022#3023#0" expanded="true" />
-                <element signature="e#3068#3069#0" expanded="true" />
+                <element signature="method#formatLine#0;class#Util#0" expanded="false" />
+                <element signature="method#formatCode#0;class#Util#0" expanded="false" />
+                <element signature="method#formatString#0;class#Util#0" expanded="false" />
+                <element signature="method#formatLambda#0;class#Util#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -179,12 +182,12 @@
         <option value="$PROJECT_DIR$/cn/ac/nya/nsasm/Editor.java" />
         <option value="$PROJECT_DIR$/cn/ac/nya/nsasm/NSASM.java" />
         <option value="$PROJECT_DIR$/src/cn/ac/nya/nsasm/Editor.java" />
-        <option value="$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java" />
         <option value="$PROJECT_DIR$/src/cn/ac/nya/nsasm/NSASM.java" />
+        <option value="$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="7">
+  <component name="ProjectFrameBounds" extendedState="6">
     <option name="x" value="-8" />
     <option name="y" value="-8" />
     <option name="width" value="1936" />
@@ -206,9 +209,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scratches" />
-      <pane id="Scope" />
-      <pane id="PackagesPane" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -231,10 +231,13 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
+      <pane id="PackagesPane" />
+      <pane id="Scratches" />
     </panes>
   </component>
   <component name="PropertiesComponent">
-    <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
+    <property name="settings.editor.selected.configurable" value="background.image.plus" />
     <property name="full.screen.before.presentation.mode" value="false" />
     <property name="GenerateAntBuildDialog.enableUiFormCompile" value="true" />
     <property name="GenerateAntBuildDialog.forceTargetJdk" value="true" />
@@ -407,7 +410,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1456" height="876" extended-state="7" />
+    <frame x="-8" y="-8" width="1456" height="876" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -420,11 +423,11 @@
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32936078" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.1812321" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.1833811" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="UI Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.38971582" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.38971582" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="true" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Nl-Palette" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
@@ -446,7 +449,7 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="80" />
+      <option name="time" value="83" />
     </breakpoint-manager>
     <watches-manager>
       <configuration name="Application">
@@ -465,7 +468,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="660">
           <caret line="49" column="39" lean-forward="true" selection-start-line="49" selection-start-column="39" selection-end-line="49" selection-end-column="39" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -499,6 +501,7 @@
             <element signature="method#calcFloat#0;class#NSASM#0" expanded="false" />
             <element signature="method#calcStr#0;class#NSASM#0" expanded="false" />
             <element signature="method#calc#0;class#NSASM#0" expanded="false" />
+            <element signature="method#loadFuncList#0;class#NSASM#0" expanded="false" />
             <element signature="e#19955#20010#0" expanded="false" />
             <element signature="e#20042#20469#0" expanded="false" />
             <element signature="e#20501#20960#0" expanded="false" />
@@ -547,7 +550,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="210">
           <caret line="14" column="43" lean-forward="false" selection-start-line="14" selection-start-column="43" selection-end-line="14" selection-end-column="43" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -555,10 +557,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="4155">
           <caret line="277" column="13" lean-forward="true" selection-start-line="277" selection-start-column="13" selection-end-line="277" selection-end-column="13" />
-          <folding>
-            <element signature="e#3022#3023#0" expanded="true" />
-            <element signature="e#3068#3069#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -568,7 +566,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1005">
           <caret line="67" column="26" lean-forward="true" selection-start-line="67" selection-start-column="26" selection-end-line="67" selection-end-column="26" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -602,6 +599,7 @@
             <element signature="method#calcFloat#0;class#NSASM#0" expanded="false" />
             <element signature="method#calcStr#0;class#NSASM#0" expanded="false" />
             <element signature="method#calc#0;class#NSASM#0" expanded="false" />
+            <element signature="method#loadFuncList#0;class#NSASM#0" expanded="false" />
             <element signature="e#19955#20010#0" expanded="false" />
             <element signature="e#20042#20469#0" expanded="false" />
             <element signature="e#20501#20960#0" expanded="false" />
@@ -657,7 +655,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="270">
           <caret line="18" column="0" lean-forward="false" selection-start-line="18" selection-start-column="0" selection-end-line="18" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -665,10 +662,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1425">
           <caret line="95" column="25" lean-forward="false" selection-start-line="95" selection-start-column="25" selection-end-line="95" selection-end-column="25" />
-          <folding>
-            <element signature="e#3022#3023#0" expanded="true" />
-            <element signature="e#3068#3069#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -709,6 +702,7 @@
             <element signature="method#calcFloat#0;class#NSASM#0" expanded="false" />
             <element signature="method#calcStr#0;class#NSASM#0" expanded="false" />
             <element signature="method#calc#0;class#NSASM#0" expanded="false" />
+            <element signature="method#loadFuncList#0;class#NSASM#0" expanded="false" />
             <element signature="e#19955#20010#0" expanded="false" />
             <element signature="e#20042#20469#0" expanded="false" />
             <element signature="e#20501#20960#0" expanded="false" />
@@ -757,7 +751,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="270">
           <caret line="18" column="0" lean-forward="false" selection-start-line="18" selection-start-column="0" selection-end-line="18" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -765,10 +758,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1320">
           <caret line="95" column="25" lean-forward="true" selection-start-line="95" selection-start-column="25" selection-end-line="95" selection-end-column="25" />
-          <folding>
-            <element signature="e#3022#3023#0" expanded="true" />
-            <element signature="e#3068#3069#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -802,6 +791,7 @@
             <element signature="method#calcFloat#0;class#NSASM#0" expanded="false" />
             <element signature="method#calcStr#0;class#NSASM#0" expanded="false" />
             <element signature="method#calc#0;class#NSASM#0" expanded="false" />
+            <element signature="method#loadFuncList#0;class#NSASM#0" expanded="false" />
             <element signature="e#19955#20010#0" expanded="false" />
             <element signature="e#20042#20469#0" expanded="false" />
             <element signature="e#20501#20960#0" expanded="false" />
@@ -850,10 +840,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1500">
           <caret line="102" column="0" lean-forward="false" selection-start-line="102" selection-start-column="0" selection-end-line="102" selection-end-column="0" />
-          <folding>
-            <element signature="e#3022#3023#0" expanded="true" />
-            <element signature="e#3068#3069#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -887,6 +873,7 @@
             <element signature="method#calcFloat#0;class#NSASM#0" expanded="false" />
             <element signature="method#calcStr#0;class#NSASM#0" expanded="false" />
             <element signature="method#calc#0;class#NSASM#0" expanded="false" />
+            <element signature="method#loadFuncList#0;class#NSASM#0" expanded="false" />
             <element signature="e#19955#20010#0" expanded="false" />
             <element signature="e#20042#20469#0" expanded="false" />
             <element signature="e#20501#20960#0" expanded="false" />
@@ -935,10 +922,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="540">
           <caret line="36" column="37" lean-forward="true" selection-start-line="36" selection-start-column="37" selection-end-line="36" selection-end-column="37" />
-          <folding>
-            <element signature="e#3022#3023#0" expanded="true" />
-            <element signature="e#3068#3069#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -972,6 +955,7 @@
             <element signature="method#calcFloat#0;class#NSASM#0" expanded="false" />
             <element signature="method#calcStr#0;class#NSASM#0" expanded="false" />
             <element signature="method#calc#0;class#NSASM#0" expanded="false" />
+            <element signature="method#loadFuncList#0;class#NSASM#0" expanded="false" />
             <element signature="e#19955#20010#0" expanded="false" />
             <element signature="e#20042#20469#0" expanded="false" />
             <element signature="e#20501#20960#0" expanded="false" />
@@ -1021,10 +1005,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="75">
           <caret line="5" column="20" lean-forward="false" selection-start-line="5" selection-start-column="20" selection-end-line="5" selection-end-column="20" />
-          <folding>
-            <element signature="e#3022#3023#0" expanded="true" />
-            <element signature="e#3068#3069#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -1058,6 +1038,7 @@
             <element signature="method#calcFloat#0;class#NSASM#0" expanded="false" />
             <element signature="method#calcStr#0;class#NSASM#0" expanded="false" />
             <element signature="method#calc#0;class#NSASM#0" expanded="false" />
+            <element signature="method#loadFuncList#0;class#NSASM#0" expanded="false" />
             <element signature="e#19955#20010#0" expanded="false" />
             <element signature="e#20042#20469#0" expanded="false" />
             <element signature="e#20501#20960#0" expanded="false" />
@@ -1106,10 +1087,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="60">
           <caret line="5" column="20" lean-forward="false" selection-start-line="5" selection-start-column="20" selection-end-line="5" selection-end-column="20" />
-          <folding>
-            <element signature="e#3022#3023#0" expanded="true" />
-            <element signature="e#3068#3069#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -1161,7 +1138,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2010">
           <caret line="140" column="14" lean-forward="false" selection-start-line="140" selection-start-column="8" selection-end-line="140" selection-end-column="14" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1169,7 +1145,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="180">
           <caret line="12" column="0" lean-forward="true" selection-start-line="12" selection-start-column="0" selection-end-line="12" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1179,25 +1154,13 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-483">
           <caret line="2237" column="18" lean-forward="false" selection-start-line="2237" selection-start-column="18" selection-end-line="2237" selection-end-column="18" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="225">
-          <caret line="93" column="5" lean-forward="true" selection-start-line="93" selection-start-column="5" selection-end-line="93" selection-end-column="5" />
-          <folding>
-            <element signature="e#3022#3023#0" expanded="true" />
-            <element signature="e#3068#3069#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/NSASM.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2250">
-          <caret line="1063" column="0" lean-forward="true" selection-start-line="1063" selection-start-column="0" selection-end-line="1063" selection-end-column="0" />
+        <state relative-caret-position="149">
+          <caret line="274" column="0" lean-forward="true" selection-start-line="274" selection-start-column="0" selection-end-line="274" selection-end-column="0" />
           <folding>
             <element signature="docComment;class#NSASM#0" expanded="false" />
             <element signature="class#RegType#0;class#NSASM#0" expanded="false" />
@@ -1224,6 +1187,7 @@
             <element signature="method#calcFloat#0;class#NSASM#0" expanded="false" />
             <element signature="method#calcStr#0;class#NSASM#0" expanded="false" />
             <element signature="method#calc#0;class#NSASM#0" expanded="false" />
+            <element signature="method#loadFuncList#0;class#NSASM#0" expanded="false" />
             <element signature="e#19955#20010#0" expanded="false" />
             <element signature="e#20042#20469#0" expanded="false" />
             <element signature="e#20501#20960#0" expanded="false" />
@@ -1264,6 +1228,19 @@
             <element signature="e#40930#41681#0" expanded="false" />
             <element signature="e#41712#42588#0" expanded="false" />
             <element signature="e#42621#42804#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1830">
+          <caret line="237" column="13" lean-forward="true" selection-start-line="237" selection-start-column="13" selection-end-line="237" selection-end-column="13" />
+          <folding>
+            <element signature="method#formatLine#0;class#Util#0" expanded="false" />
+            <element signature="method#formatCode#0;class#Util#0" expanded="false" />
+            <element signature="method#formatString#0;class#Util#0" expanded="false" />
+            <element signature="method#formatLambda#0;class#Util#0" expanded="false" />
           </folding>
         </state>
       </provider>

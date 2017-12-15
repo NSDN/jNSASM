@@ -36,7 +36,7 @@ public class Util {
         return tmp;
     }
 
-    public static String formatCode(String var) {
+    public static String formatLine(String var) {
         if (var.isEmpty()) return "";
         while (var.contains("\r")) {
             var = var.replace("\r", "");
@@ -71,8 +71,22 @@ public class Util {
         left = cleanSymbol(left, "=", " ");
         left = cleanSymbol(left, "{", "\t", " ");
         left = cleanSymbol(left, "}", "\t", " ");
+        left = cleanSymbol(left, "(", "\t", " ");
+        left = cleanSymbol(left, ")", "\t", " ");
 
         return left + right;
+    }
+
+    public static String formatCode(String var) {
+        String varBuf = ""; Scanner scanner = new Scanner(var);
+        while (scanner.hasNextLine()) {
+            varBuf = varBuf.concat(formatLine(scanner.nextLine()) + "\n");
+        }
+        while (varBuf.contains("\n\n")) {
+            varBuf = varBuf.replace("\n\n", "\n");
+        }
+        scanner.close();
+        return varBuf;
     }
 
     public static String repairBrackets(String var, String left, String right) {
@@ -82,6 +96,10 @@ public class Util {
         var = var.replace(right, '\n' + right);
         while (var.contains("\n\n"))
             var = var.replace("\n\n", "\n");
+        while (var.contains(left + " "))
+            var = var.replace(left + " ", left);
+        while (var.contains(" \n" + right))
+            var = var.replace(" \n" + right, "\n" + right);
         return var;
     }
 
@@ -142,21 +160,17 @@ public class Util {
 
     public static String[][] getSegments(String var) {
         LinkedHashMap<String, String> segBuf = new LinkedHashMap<>();
-        String varBuf = ""; Scanner scanner = new Scanner(var);
         LinkedList<String> pub = new LinkedList<>();
+        String varBuf = var;
 
-        while (scanner.hasNextLine()) {
-            varBuf = varBuf.concat(formatCode(scanner.nextLine()) + "\n");
-        }
-        while (varBuf.contains("\n\n")) {
-            varBuf = varBuf.replace("\n\n", "\n");
-        }
+        varBuf = formatCode(varBuf);
         varBuf = repairBrackets(varBuf, "{", "}");
         varBuf = repairBrackets(varBuf, "(", ")");
+        varBuf = formatCode(varBuf);
 
         varBuf = formatLambda(varBuf);
 
-        scanner = new Scanner(varBuf);
+        Scanner scanner = new Scanner(varBuf);
 
         String head, body = "", tmp;
         while (scanner.hasNextLine()) {
@@ -335,7 +349,7 @@ public class Util {
                 lines += 1;
                 continue;
             }
-            buf = formatCode(buf);
+            buf = formatLine(buf);
 
             if (buf.contains("#")) {
                 Util.print("<" + buf + ">\n");
