@@ -40,9 +40,10 @@ public class NSASM {
 
     private LinkedHashMap<String, Register> heapManager;
     private LinkedList<Register> stackManager;
-    private int stackSize;
+    private int heapSize, stackSize;
     protected Register[] regGroup;
     private Register stateReg;
+    private Register prevDstReg;
 
     private LinkedList<Integer> backupReg;
     private int progSeg, tmpSeg;
@@ -144,19 +145,22 @@ public class NSASM {
                 if (var.length() < 3) return null;
                 String tmp, rep;
                 try {
-                    if (var.split("\"").length > 2) {
-                        tmp = rep = var.split("\"")[1];
-                        Register repeat = getRegister(var.split("\"")[2].replace("*", ""));
+                    if (var.contains("*")) {
+                        tmp = rep = var.split("\"\\*")[0].substring(1);
+                        Register repeat = getRegister(var.split("\"\\*")[1]);
                         if (repeat == null) return null;
                         if (repeat.type != RegType.INT) return null;
                         for (int i = 1; i < (int) repeat.data; i++)
                             tmp = tmp.concat(rep);
                     } else {
-                        tmp = var.split("\"")[1];
+                        tmp = var.substring(1, var.length() - 1);
                     }
                 } catch (Exception e) {
                     return null;
                 }
+                tmp = tmp.replace("\\\"", "\"").replace("\\\'", "\'")
+                        .replace("\\\\", "\\").replace("\\\n", "\n")
+                        .replace("\\\t", "\t");
                 register.type = RegType.STR;
                 register.readOnly = true;
                 register.data = tmp;
@@ -205,7 +209,9 @@ public class NSASM {
             } else if (verifyWord(var, WordType.CODE)) {
                 register.type = RegType.CODE;
                 register.readOnly = true;
-                register.data = var;
+                String code = var.substring(1, var.length() - 1);
+                code = Util.decodeLambda(code);
+                register.data = code;
             } else return null;
             return register;
         }
@@ -254,11 +260,12 @@ public class NSASM {
         if (!funcList.containsKey(operator))
             return verifyWord(operator, WordType.TAG) ? Result.OK : Result.ERR;
 
+        prevDstReg = dr != null ? dr : prevDstReg;
         return funcList.get(operator).run(dr, sr);
     }
 
-    public void run() {
-        if (code == null) return;
+    public Register run() {
+        if (code == null) return null;
         Result result; String segBuf, codeBuf;
 
         progSeg = progCnt = 0;
@@ -285,9 +292,10 @@ public class NSASM {
                 if (result == Result.ERR) {
                     Util.print("\nNSASM running error!\n");
                     Util.print("At "+ segBuf + ", line " + (progCnt + 1) + ": " + codeBuf + "\n\n");
-                    return;
+                    return null;
                 } else if (result == Result.ETC) {
-                    return;
+                    prevDstReg.readOnly = false;
+                    return prevDstReg;
                 }
             }
 
@@ -296,6 +304,16 @@ public class NSASM {
                 progSeg = backupReg.pop() - 1;
             } else progCnt = 0;
         }
+
+        prevDstReg.readOnly = false;
+        return prevDstReg;
+    }
+
+    private Register eval(Register register) {
+        if (register == null) return null;
+        if (register.type != RegType.CODE) return null;
+        String[][] code = Util.getSegments(register.data.toString());
+        return new NSASM(this, code).run();
     }
 
     private String[] convToArray(String var) {
@@ -334,9 +352,20 @@ public class NSASM {
         return Result.OK;
     }
 
+    private void copyRegGroup(NSASM base) {
+        for (int i = 0; i < base.regGroup.length; i++)
+            this.regGroup[i].copy(base.regGroup[i]);
+    }
+
+    private NSASM(NSASM base, String[][] code) {
+        this(base.heapSize, base.stackSize, base.regGroup.length, code);
+        copyRegGroup(base);
+    }
+
     public NSASM(int heapSize, int stackSize, int regCnt, String[][] code) {
         heapManager = new LinkedHashMap<>(heapSize);
         stackManager = new LinkedList<>();
+        this.heapSize = heapSize;
         this.stackSize = stackSize;
 
         stateReg = new Register();
@@ -351,7 +380,7 @@ public class NSASM {
         regGroup = new Register[regCnt];
         for (int i = 0; i < regGroup.length; i++) {
             regGroup[i] = new Register();
-            regGroup[i].type = RegType.CHAR;
+            regGroup[i].type = RegType.INT;
             regGroup[i].readOnly = false;
             regGroup[i].data = 0;
         }
@@ -632,6 +661,10 @@ public class NSASM {
             if (src == null) {
                 if (dst.type == RegType.STR) {
                     Util.print(((String) dst.data).substring(dst.strPtr));
+                } else if (dst.type == RegType.CODE) {
+                    Register register = eval(dst);
+                    if (register == null) return Result.ERR;
+                    Util.print(register.data);
                 } else Util.print(dst.data);
             } else {
                 if (dst.type != RegType.INT)
@@ -640,12 +673,20 @@ public class NSASM {
                     case 0x00:
                         if (src.type == RegType.STR) {
                             Util.print(((String) src.data).substring(src.strPtr));
+                        } else if (src.type == RegType.CODE) {
+                            Register register = eval(src);
+                            if (register == null) return Result.ERR;
+                            Util.print(register.data);
                         } else Util.print(src.data);
                         break;
                     case 0xFF:
                         Util.print("[DEBUG] >>> ");
                         if (src.type == RegType.STR) {
                             Util.print(((String) src.data).substring(src.strPtr));
+                        } else if (src.type == RegType.CODE) {
+                            Register register = eval(src);
+                            if (register == null) return Result.ERR;
+                            Util.print(register.data);
                         } else Util.print(src.data);
                         Util.print('\n');
                         break;
@@ -660,14 +701,46 @@ public class NSASM {
             if (src != null) {
                 if (dst.type == RegType.STR) {
                     if (dst.readOnly) return Result.ERR;
-                    if (src.type != RegType.STR) return Result.ERR;
-                    dst.data = dst.data.toString().concat(src.data.toString() + '\n');
+                    if (src.type != RegType.STR && src.type != RegType.CHAR)
+                        return Result.ERR;
+                    if (src.type == RegType.CHAR && src.data.equals('\b')) {
+                        if (dst.data.toString().contains("\n")) {
+                            String[] parts = dst.data.toString().split("\n");
+                            String res = "";
+                            for (int i = 0; i < parts.length - 1; i++) {
+                                res = res.concat(parts[i]);
+                                if (i < parts.length - 2) res = res.concat("\n");
+                            }
+                        }
+                    } else {
+                        dst.data = dst.data.toString().concat('\n' + src.data.toString());
+                    }
+                } else if (dst.type == RegType.CODE) {
+                    if (dst.readOnly) return Result.ERR;
+                    if (src.type != RegType.STR && src.type != RegType.CHAR)
+                        return Result.ERR;
+                    if (src.type == RegType.CHAR && src.data.equals('\b')) {
+                        if (dst.data.toString().contains("\n")) {
+                            String[] parts = dst.data.toString().split("\n");
+                            String res = "";
+                            for (int i = 0; i < parts.length - 1; i++) {
+                                res = res.concat(parts[i]);
+                                if (i < parts.length - 2) res = res.concat("\n");
+                            }
+                        }
+                    } else {
+                        dst.data = dst.data.toString().concat('\n' + src.data.toString());
+                    }
                 } else return Result.ERR;
                 return Result.OK;
             }
             if (dst == null) return Result.ERR;
             if (dst.type == RegType.STR) {
                 Util.print(((String) dst.data).substring(dst.strPtr) + '\n');
+            } else if (dst.type == RegType.CODE) {
+                Register register = eval(dst);
+                if (register == null) return Result.ERR;
+                Util.print(register.data.toString() + '\n');
             } else Util.print(dst.data.toString() + '\n');
             return Result.OK;
         });
@@ -676,7 +749,10 @@ public class NSASM {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
-            return calc(dst, src, '+');
+            if (src.type == RegType.CODE)
+                return calc(dst, eval(src), '+');
+            else
+                return calc(dst, src, '+');
         });
 
         funcList.put("inc", (dst, src) -> {
@@ -694,7 +770,10 @@ public class NSASM {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
-            return calc(dst, src, '-');
+            if (src.type == RegType.CODE)
+                return calc(dst, eval(src), '-');
+            else
+                return calc(dst, src, '-');
         });
 
         funcList.put("dec", (dst, src) -> {
@@ -712,35 +791,50 @@ public class NSASM {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
-            return calc(dst, src, '*');
+            if (src.type == RegType.CODE)
+                return calc(dst, eval(src), '*');
+            else
+                return calc(dst, src, '*');
         });
 
         funcList.put("div", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
-            return calc(dst, src, '/');
+            if (src.type == RegType.CODE)
+                return calc(dst, eval(src), '/');
+            else
+                return calc(dst, src, '/');
         });
 
         funcList.put("and", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
-            return calc(dst, src, '&');
+            if (src.type == RegType.CODE)
+                return calc(dst, eval(src), '&');
+            else
+                return calc(dst, src, '&');
         });
 
         funcList.put("or", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
-            return calc(dst, src, '|');
+            if (src.type == RegType.CODE)
+                return calc(dst, eval(src), '|');
+            else
+                return calc(dst, src, '|');
         });
 
         funcList.put("xor", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
-            return calc(dst, src, '^');
+            if (src.type == RegType.CODE)
+                return calc(dst, eval(src), '^');
+            else
+                return calc(dst, src, '^');
         });
 
         funcList.put("not", (dst, src) -> {
@@ -754,14 +848,20 @@ public class NSASM {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
-            return calc(dst, src, '<');
+            if (src.type == RegType.CODE)
+                return calc(dst, eval(src), '<');
+            else
+                return calc(dst, src, '<');
         });
 
         funcList.put("shr", (dst, src) -> {
             if (src == null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (dst.readOnly) return Result.ERR;
-            return calc(dst, src, '>');
+            if (src.type == RegType.CODE)
+                return calc(dst, eval(src), '>');
+            else
+                return calc(dst, src, '>');
         });
 
         funcList.put("cmp", (dst, src) -> {
@@ -769,16 +869,26 @@ public class NSASM {
             if (dst == null) return Result.ERR;
             if (funcList.get("mov").run(stateReg, dst) == Result.ERR)
                 return Result.ERR;
-            if (funcList.get("sub").run(stateReg, src) == Result.ERR)
-                return Result.ERR;
+            if (src.type == RegType.CODE)
+                if (funcList.get("sub").run(stateReg, eval(src)) == Result.ERR)
+                    return Result.ERR;
+            else
+                if (funcList.get("sub").run(stateReg, src) == Result.ERR)
+                    return Result.ERR;
+
             return Result.OK;
         });
 
         funcList.put("test", (dst, src) -> {
             if (src != null) return Result.ERR;
             if (dst == null) return Result.ERR;
-            if (funcList.get("mov").run(stateReg, dst) == Result.ERR)
-                return Result.ERR;
+            if (dst.type == RegType.CODE)
+                if (funcList.get("mov").run(stateReg, eval(dst)) == Result.ERR)
+                    return Result.ERR;
+            else
+                if (funcList.get("mov").run(stateReg, dst) == Result.ERR)
+                    return Result.ERR;
+
             Register reg = new Register();
             reg.type = dst.type; reg.readOnly = false; reg.data = 0;
             if (funcList.get("sub").run(stateReg, reg) == Result.ERR)
@@ -839,8 +949,17 @@ public class NSASM {
         });
 
         funcList.put("end", (dst, src) -> {
-            if (dst == null && src == null)
+            if (src == null && dst == null)
                 return Result.ETC;
+            return Result.ERR;
+        });
+
+        funcList.put("ret", (dst, src) -> {
+            if (src == null) {
+                if (dst != null) prevDstReg = dst;
+                else prevDstReg = regGroup[0];
+                return Result.ETC;
+            }
             return Result.ERR;
         });
 
@@ -898,8 +1017,17 @@ public class NSASM {
         funcList.put("ld", (dst, src) -> {
             if (src != null) return Result.ERR;
             if (dst == null) return Result.ERR;
-            if (dst.type != RegType.STR) return Result.ERR;
-            String path = (String) dst.data;
+            if (dst.type != RegType.STR && dst.type != RegType.CODE)
+                return Result.ERR;
+
+            String path;
+            if (dst.type == RegType.CODE) {
+                Register res = eval(dst);
+                if (res == null) return Result.ERR;
+                if (res.type != RegType.STR) return Result.ERR;
+                path = res.data.toString();
+            } else path = dst.data.toString();
+
             String code = Util.read(path);
             if (code == null) return Result.ERR;
             String[][] segs = Util.getSegments(code);
@@ -907,16 +1035,16 @@ public class NSASM {
                 Util.print("At file: " + path + "\n");
                 return Result.ERR;
             }
+
             return Result.OK;
         });
 
         funcList.put("eval", (dst, src) -> {
-            if (src != null) return Result.ERR;
             if (dst == null) return Result.ERR;
-            if (dst.type != RegType.CODE) return Result.ERR;
-            String code = dst.data.toString().substring(1, dst.data.toString().length() - 1);
-            code = Util.decodeLambda(code);
-            new NSASM(heapManager.size(), stackSize, regGroup.length, Util.getSegments(code)).run();
+
+            if (src == null) eval(dst);
+            else dst.copy(eval(src));
+
             return Result.OK;
         });
     }
