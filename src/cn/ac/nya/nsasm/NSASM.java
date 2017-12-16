@@ -9,11 +9,11 @@ public class NSASM {
 
     public static final String version = "0.40 (Java)";
 
-    protected enum RegType {
+    public enum RegType {
         CHAR, STR, INT, FLOAT, CODE
     }
 
-    protected class Register {
+    public class Register {
         public RegType type;
         public Object data;
         public int strPtr = 0;
@@ -34,7 +34,7 @@ public class NSASM {
         }
     }
 
-    protected interface Operator {
+    public interface Operator {
         Result run(Register dst, Register src);
     }
 
@@ -159,16 +159,7 @@ public class NSASM {
                     return null;
                 }
 
-                if (tmp.contains("\"")) {
-                    String[] parts = tmp.split("\\\\\"");
-                    String a = parts[0], b = "", c = parts[parts.length - 1];
-                    for (int i = 1; i < parts.length - 1; i++)
-                        b = b.concat(parts[i]);
-                    a = Util.formatString(a); c = Util.formatString(c);
-                    tmp = a + "\"" + b + "\"" + c;
-                } else {
-                    tmp = Util.formatString(tmp);
-                }
+                tmp = Util.formatString(tmp);
 
                 register.type = RegType.STR;
                 register.readOnly = true;
@@ -318,7 +309,7 @@ public class NSASM {
         return prevDstReg;
     }
 
-    private Register eval(Register register) {
+    protected Register eval(Register register) {
         if (register == null) return null;
         if (register.type != RegType.CODE) return null;
         String[][] code = Util.getSegments(register.data.toString());
@@ -880,12 +871,13 @@ public class NSASM {
             if (dst == null) return Result.ERR;
             if (funcList.get("mov").run(stateReg, dst) == Result.ERR)
                 return Result.ERR;
-            if (src.type == RegType.CODE)
+            if (src.type == RegType.CODE) {
                 if (funcList.get("sub").run(stateReg, eval(src)) == Result.ERR)
                     return Result.ERR;
-            else
+            } else {
                 if (funcList.get("sub").run(stateReg, src) == Result.ERR)
                     return Result.ERR;
+			}
 
             return Result.OK;
         });
@@ -893,12 +885,13 @@ public class NSASM {
         funcList.put("test", (dst, src) -> {
             if (src != null) return Result.ERR;
             if (dst == null) return Result.ERR;
-            if (dst.type == RegType.CODE)
+            if (dst.type == RegType.CODE) {
                 if (funcList.get("mov").run(stateReg, eval(dst)) == Result.ERR)
                     return Result.ERR;
-            else
+            } else {
                 if (funcList.get("mov").run(stateReg, dst) == Result.ERR)
                     return Result.ERR;
+			}
 
             Register reg = new Register();
             reg.type = dst.type; reg.readOnly = false; reg.data = 0;
