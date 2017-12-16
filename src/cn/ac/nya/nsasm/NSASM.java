@@ -159,16 +159,7 @@ public class NSASM {
                     return null;
                 }
 
-                if (tmp.contains("\"")) {
-                    String[] parts = tmp.split("\\\\\"");
-                    String a = parts[0], b = "", c = parts[parts.length - 1];
-                    for (int i = 1; i < parts.length - 1; i++)
-                        b = b.concat(parts[i]);
-                    a = Util.formatString(a); c = Util.formatString(c);
-                    tmp = a + "\"" + b + "\"" + c;
-                } else {
-                    tmp = Util.formatString(tmp);
-                }
+                tmp = Util.formatString(tmp);
 
                 register.type = RegType.STR;
                 register.readOnly = true;
