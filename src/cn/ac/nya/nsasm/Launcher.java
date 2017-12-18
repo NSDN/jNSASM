@@ -16,7 +16,12 @@ public class Launcher {
         } else {
             if (args.length == 2) {
                 if (args[0].equals("r")) {
+                    long now = System.nanoTime();
                     Util.run(args[1]);
+                    long end = System.nanoTime();
+                    double ms = (double) (end - now) / 1e6;
+                    Util.print("This script took " +
+                        Double.toString(ms) + "ms.\n\n");
                     return;
                 }
             }
