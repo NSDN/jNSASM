@@ -74,6 +74,8 @@ public class Util {
         left = cleanSymbol(left, "(", "\t", " ");
         left = cleanSymbol(left, ")", "\t", " ");
 
+        left = cleanSymbol(left, "]", "\t", " ");
+
         return left + right;
     }
 
@@ -172,25 +174,40 @@ public class Util {
 
         Scanner scanner = new Scanner(varBuf);
 
-        String head, body = "", tmp;
+        String head = "", body = "", tmp;
+        final int IDLE = 0, RUN = 1;
+        int state = IDLE, count = 0;
         while (scanner.hasNextLine()) {
-            head = scanner.nextLine();
-            if (!head.contains("{")) {
-                pub.add(head);
-                continue;
+            switch (state) {
+                case IDLE:
+                    head = scanner.nextLine();
+                    count = 0; body = "";
+                    if (head.contains("{")) {
+                        head = head.replace("{", "");
+                        count += 1;
+                        state = RUN;
+                    } else pub.add(head);
+                    break;
+                case RUN:
+                    if (scanner.hasNextLine()) {
+                        tmp = scanner.nextLine();
+                        if (tmp.contains("{"))
+                            count += 1;
+                        else if (tmp.contains("}"))
+                            count -= 1;
+                        if (tmp.contains("(") && tmp.contains(")")) {
+                            count -= 1;
+                        }
+                        if (count == 0) {
+                            segBuf.put(head, body);
+                            state = IDLE;
+                        }
+                        body = body.concat(tmp + "\n");
+                    }
+                    break;
+                default:
+                    break;
             }
-            head = head.replace("{", "");
-
-            if (scanner.hasNextLine()) {
-                tmp = scanner.nextLine();
-                while (!tmp.contains("}") && scanner.hasNextLine()) {
-                    body = body.concat(tmp + "\n");
-                    tmp = scanner.nextLine();
-                }
-            }
-
-            segBuf.put(head, body);
-            body = "";
         }
 
         String[][] out = new String[segBuf.size() + 1][2];

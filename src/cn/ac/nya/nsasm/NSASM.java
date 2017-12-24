@@ -7,7 +7,7 @@ import java.util.*;
  */
 public class NSASM {
 
-    public static final String version = "0.40 (Java)";
+    public static final String version = "0.41 (Java)";
 
     public enum RegType {
         CHAR, STR, INT, FLOAT, CODE
@@ -307,6 +307,53 @@ public class NSASM {
 
         prevDstReg.readOnly = false;
         return prevDstReg;
+    }
+
+    public void call(String segName) {
+        Result result; String segBuf, codeBuf;
+
+        for (int seg = 0; seg < code.keySet().size(); seg++) {
+            segBuf = (String) (code.keySet().toArray())[seg];
+            if (segName.equals(segBuf)) {
+                progSeg = seg;
+                progCnt = 0;
+                break;
+            }
+        }
+
+        for (; progSeg < code.keySet().size(); progSeg++) {
+            segBuf = (String) (code.keySet().toArray())[progSeg];
+            if (code.get(segBuf) == null) continue;
+
+            for (; progCnt < code.get(segBuf).length; progCnt++) {
+                if (tmpSeg >= 0 || tmpCnt >= 0) {
+                    progSeg = tmpSeg; progCnt = tmpCnt;
+                    tmpSeg = -1; tmpCnt = -1;
+                }
+
+                segBuf = (String) (code.keySet().toArray())[progSeg];
+                if (code.get(segBuf) == null) break;
+                codeBuf = code.get(segBuf)[progCnt];
+
+                if (codeBuf.length() == 0) {
+                    continue;
+                }
+
+                result = execute(codeBuf);
+                if (result == Result.ERR) {
+                    Util.print("\nNSASM running error!\n");
+                    Util.print("At "+ segBuf + ", line " + (progCnt + 1) + ": " + codeBuf + "\n\n");
+                    return;
+                } else if (result == Result.ETC) {
+                    return;
+                }
+            }
+
+            if (!backupReg.isEmpty()) {
+                progCnt = backupReg.pop() + 1;
+                progSeg = backupReg.pop() - 1;
+            } else progCnt = 0;
+        }
     }
 
     protected Register eval(Register register) {

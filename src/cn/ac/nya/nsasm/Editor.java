@@ -5,6 +5,7 @@ import javafx.geometry.*;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
 /**
@@ -40,42 +41,42 @@ public class Editor extends Application {
         GridPane.setVgrow(textArea, Priority.ALWAYS);
         GridPane.setMargin(textArea, new Insets(5.0, 5.0, 0.0, 5.0));
         textArea.setId("content");
-        textArea.setOnKeyTyped((event -> {
+        textArea.setFont(Font.font("Consolas"));
+        textArea.setOnKeyTyped((event) -> {
             TextArea area = ((TextArea) root.lookup("#content"));
             Label tabCntLabel = ((Label) root.lookup("#tabCnt"));
             Label codeLenLabel = ((Label) root.lookup("#codeLen"));
             int pos = area.getCaretPosition();
             switch (event.getCharacter()) {
-                case "\b":
-                    if (pos == 0 && area.getText().isEmpty()) {
-                        tabCnt = tabCnt > 0 ? tabCnt - 1 : 0;
-                    }
-                    while (pos > 0 && (
-                                area.getText().charAt(pos - 1) == '\t' ||
-                                area.getText().charAt(pos - 1) == '\n'
-                        )) {
-                        if (area.getText().charAt(pos - 1) == '\n') {
-                            tabCnt = tabCnt > 0 ? tabCnt - 1 : 0;
-                            break;
-                        }
-                        pos -= 1;
-                        if (pos == 0 || area.getText().charAt(pos - 1) == '\n') {
-                            tabCnt = tabCnt > 0 ? tabCnt - 1 : 0;
-                            break;
-                        }
-                    }
-                    break;
                 case "\t":
-                    tabCnt += 1;
+                    area.replaceText(pos - 1, pos, "    ");
+                    area.positionCaret(pos + 3);
                     break;
                 case "\r":
-                    for (int i = 0; i < tabCnt; i++)
-                        area.insertText(area.getCaretPosition(), "\t");
+                    int start, end;
+                    for (start = pos - 2; start >= 0; start--) {
+                        if (area.getText().charAt(start) == '\n')
+                            break;
+                    }
+                    for (end = start + 1; end < pos; end++) {
+                        if (area.getText().charAt(end) != ' ')
+                            break;
+                    }
+                    String indent = "";
+                    for (int k = 0; k < end - start - 1; k++) indent = indent.concat(" ");
+                    tabCnt = end - start - 1;
+                    area.insertText(pos, indent);
                     break;
+                case "(": area.insertText(pos, ")"); area.positionCaret(pos); break;
+                case "<": area.insertText(pos, ">"); area.positionCaret(pos); break;
+                case "{": area.insertText(pos, "}"); area.positionCaret(pos); break;
+                case "[": area.insertText(pos, "]"); area.positionCaret(pos); break;
+                case "\'": area.insertText(pos, "\'"); area.positionCaret(pos); break;
+                case "\"": area.insertText(pos, "\""); area.positionCaret(pos); break;
             }
             tabCntLabel.setText("Tab count: " + tabCnt);
             codeLenLabel.setText("Code length: " + area.getText().length());
-        }));
+        });
         root.add(textArea, 0, 0);
 
         GridPane gridPane = new GridPane();
