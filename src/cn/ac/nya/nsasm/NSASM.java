@@ -7,7 +7,7 @@ import java.util.*;
  */
 public class NSASM {
 
-    public static final String version = "0.41 (Java)";
+    public static final String version = "0.42 (Java)";
 
     public enum RegType {
         CHAR, STR, INT, FLOAT, CODE
@@ -294,7 +294,7 @@ public class NSASM {
                     Util.print("At "+ segBuf + ", line " + (progCnt + 1) + ": " + codeBuf + "\n\n");
                     return null;
                 } else if (result == Result.ETC) {
-                    prevDstReg.readOnly = false;
+                    if (prevDstReg != null) prevDstReg.readOnly = false;
                     return prevDstReg;
                 }
             }
@@ -305,7 +305,7 @@ public class NSASM {
             } else progCnt = 0;
         }
 
-        prevDstReg.readOnly = false;
+        if (prevDstReg != null) prevDstReg.readOnly = false;
         return prevDstReg;
     }
 
