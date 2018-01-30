@@ -640,6 +640,7 @@ public class NSASM {
                 src.readOnly = true;
             }
             if (dst == null) return Result.ERR;
+			if (src.type != RegType.INT) return Result.ERR;
             String buf; Register reg;
             switch ((int) src.data) {
                 case 0x00:
@@ -745,6 +746,7 @@ public class NSASM {
         });
 
         funcList.put("prt", (dst, src) -> {
+            if (dst == null) return Result.ERR;
             if (src != null) {
                 if (dst.type == RegType.STR) {
                     if (dst.readOnly) return Result.ERR;

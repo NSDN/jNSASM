@@ -200,7 +200,8 @@ public class Util {
                         else if (tmp.contains("}"))
                             count -= 1;
                         if (tmp.contains("(") && tmp.contains(")")) {
-                            count -= 1;
+                            if (tmp.contains("{") && tmp.contains("}"))
+                                count -= 1;
                         }
                         if (count == 0) {
                             segBuf.put(head, body);
