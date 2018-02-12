@@ -7,10 +7,10 @@ import java.util.*;
  */
 public class NSASM {
 
-    public static final String version = "0.43 (Java)";
+    public static final String version = "0.45 (Java)";
 
     public enum RegType {
-        CHAR, STR, INT, FLOAT, CODE
+        CHAR, STR, INT, FLOAT, CODE, MAP
     }
 
     public class Register {
@@ -21,9 +21,24 @@ public class NSASM {
 
         @Override
         public String toString() {
-            return "Type: " + type.name() + "\n" +
-                    "Data: " + data.toString() + "\n" +
-                    "ReadOnly: " + readOnly;
+            switch (type) {
+                case CODE:
+                    return "(\n" + data.toString() + "\n)";
+                default:
+                    return data.toString();
+            }
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof Register)
+                return data == ((Register) obj).data;
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return data.hashCode();
         }
 
         public void copy(Register reg) {
@@ -34,13 +49,29 @@ public class NSASM {
         }
     }
 
+    public class Map extends LinkedHashMap<Register, Register> {
+        public Map() { super(); }
+
+        @Override
+        public String toString() {
+            String str = "M(\n";
+            for (Register key : keySet()) {
+                str = str.concat(key.toString() + "->" + get(key).toString() + "\n");
+            }
+            str += ")";
+
+            return str;
+        }
+    }
+
     public interface Operator {
         Result run(Register dst, Register src);
     }
 
     private LinkedHashMap<String, Register> heapManager;
     private LinkedList<Register> stackManager;
-    private int heapSize, stackSize;
+    private int heapSize, stackSize, regCnt;
+    protected Register useReg;
     protected Register[] regGroup;
     private Register stateReg;
     private Register prevDstReg;
@@ -59,7 +90,7 @@ public class NSASM {
     private enum WordType {
         REG, CHAR, STR, INT,
         FLOAT, VAR, TAG, SEG,
-        CODE
+        CODE, MAP
     }
 
     private boolean verifyBound(String var, char left, char right) {
@@ -99,11 +130,16 @@ public class NSASM {
                 return verifyBound(var, '<', '>');
             case CODE:
                 return verifyBound(var, '(', ')');
+            case MAP:
+                if (var.charAt(0) == 'm' || var.charAt(0) == 'M')
+                    return verifyBound(var.substring(1), '(', ')');
+                else return false;
             case VAR:
                 return !verifyWord(var, WordType.REG) && !verifyWord(var, WordType.CHAR) &&
                     !verifyWord(var, WordType.STR) && !verifyWord(var, WordType.INT) &&
                     !verifyWord(var, WordType.FLOAT) && !verifyWord(var, WordType.TAG) &&
-                    !verifyWord(var, WordType.SEG) && !verifyWord(var, WordType.CODE);
+                    !verifyWord(var, WordType.SEG) && !verifyWord(var, WordType.CODE) &&
+                    !verifyWord(var, WordType.MAP);
         }
         return false;
     }
@@ -212,6 +248,20 @@ public class NSASM {
                 String code = var.substring(1, var.length() - 1);
                 code = Util.decodeLambda(code);
                 register.data = code;
+            } else if (verifyWord(var, WordType.MAP)) {
+                String code = var.substring(2, var.length() - 1);
+
+                register = new Register();
+                register.type = RegType.MAP;
+                register.readOnly = true;
+                register.data = new Map();
+                code = Util.decodeLambda(code);
+                funcList.get("mov").run(regGroup[regCnt], register);
+
+                Register reg = new Register();
+                reg.type = RegType.CODE; reg.readOnly = true;
+                reg.data = code + "\n" + "ret r" + regCnt + "\n";
+                register = eval(reg);
             } else return null;
             return register;
         }
@@ -227,7 +277,8 @@ public class NSASM {
             if (
                 operator.equals("var") || operator.equals("int") ||
                 operator.equals("char") || operator.equals("float") ||
-                operator.equals("str") || operator.equals("code")
+                operator.equals("str") || operator.equals("code") ||
+                operator.equals("map")
             ) { //Variable define
                 dst = var.substring(operator.length() + 1).split("=")[0];
                 if (var.length() <= operator.length() + 1 + dst.length()) return Result.ERR;
@@ -405,7 +456,7 @@ public class NSASM {
     }
 
     private NSASM(NSASM base, String[][] code) {
-        this(base.heapSize, base.stackSize, base.regGroup.length, code);
+        this(base.heapSize, base.stackSize, base.regCnt, code);
         copyRegGroup(base);
     }
 
@@ -414,6 +465,7 @@ public class NSASM {
         stackManager = new LinkedList<>();
         this.heapSize = heapSize;
         this.stackSize = stackSize;
+        this.regCnt = regCnt;
 
         stateReg = new Register();
         stateReg.data = 0;
@@ -424,13 +476,14 @@ public class NSASM {
         progSeg = 0; progCnt = 0;
         tmpSeg = -1; tmpCnt = -1;
 
-        regGroup = new Register[regCnt];
+        regGroup = new Register[regCnt + 1];
         for (int i = 0; i < regGroup.length; i++) {
             regGroup[i] = new Register();
             regGroup[i].type = RegType.INT;
             regGroup[i].readOnly = false;
             regGroup[i].data = 0;
         }
+        useReg = regGroup[regCnt];
 
         funcList = new LinkedHashMap<>();
         loadFuncList();
@@ -593,6 +646,18 @@ public class NSASM {
             if (!verifyWord((String) dst.data, WordType.VAR)) return Result.ERR;
             if (heapManager.containsKey((String) dst.data)) return Result.ERR;
             if (src.type != RegType.CODE) return Result.ERR;
+
+            src.readOnly = false;
+            heapManager.put((String) dst.data, src);
+            return Result.OK;
+        });
+
+        funcList.put("map", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (!verifyWord((String) dst.data, WordType.VAR)) return Result.ERR;
+            if (heapManager.containsKey((String) dst.data)) return Result.ERR;
+            if (src.type != RegType.MAP) return Result.ERR;
 
             src.readOnly = false;
             heapManager.put((String) dst.data, src);
@@ -1099,6 +1164,178 @@ public class NSASM {
             else dst.copy(eval(src));
 
             return Result.OK;
+        });
+
+        funcList.put("use", (dst, src) -> {
+            if (src != null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            if (dst.type != RegType.MAP) return Result.ERR;
+            useReg = dst;
+            return Result.OK;
+        });
+
+        funcList.put("put", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (useReg == null) return Result.ERR;
+            if (useReg.type != RegType.MAP) return Result.ERR;
+            if (dst.type == RegType.CODE) {
+                Register reg = eval(dst);
+                if (reg == null) return Result.ERR;
+                if (!(reg.data instanceof Map)) return Result.ERR;
+                if (((Map)useReg.data).containsKey(reg))
+                    ((Map)useReg.data).remove(reg);
+                ((Map)useReg.data).put(reg, src);
+            } else {
+                if (((Map)useReg.data).containsKey(dst))
+                    ((Map)useReg.data).remove(dst);
+                ((Map)useReg.data).put(dst, src);
+            }
+
+            return Result.OK;
+        });
+
+        funcList.put("get", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            if (useReg == null) return Result.ERR;
+            if (useReg.type != RegType.MAP) return Result.ERR;
+
+            if (src.type == RegType.CODE) {
+                Register reg = eval(src);
+                if (reg == null) return Result.ERR;
+                if (!(reg.data instanceof Map)) return Result.ERR;
+                if (!((Map)useReg.data).containsKey(reg)) return Result.ERR;
+                return funcList.get("mov").run(dst, ((Map)useReg.data).get(reg));
+            } else {
+                if (!((Map)useReg.data).containsKey(src)) return Result.ERR;
+                return funcList.get("mov").run(dst, ((Map)useReg.data).get(src));
+            }
+        });
+
+        funcList.put("cat", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            switch (dst.type) {
+                case STR:
+                    if (src.type != RegType.STR)
+                        return Result.ERR;
+                    dst.data = (String)dst.data + (String)src.data;
+                    break;
+                case MAP:
+                    if (src.type != RegType.MAP)
+                        return Result.ERR;
+                    if (!(dst.data instanceof Map)) return Result.ERR;
+                    if (!(src.data instanceof Map)) return Result.ERR;
+                for (java.util.Map.Entry<Register, Register> i : ((Map) src.data).entrySet()) {
+                    if (((Map)dst.data).containsKey(i.getKey()))
+                        ((Map)dst.data).remove(i.getKey());
+                    ((Map)dst.data).put(i.getKey(), i.getValue());
+                }
+                break;
+                default:
+                    return Result.ERR;
+            }
+            return Result.OK;
+        });
+
+        funcList.put("dog", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            switch (dst.type) {
+                case STR:
+                    if (src.type != RegType.STR)
+                        return Result.ERR;
+                    dst.data = ((String)dst.data).replace((String)src.data, "");
+                    break;
+                case MAP:
+                    if (src.type != RegType.MAP)
+                        return Result.ERR;
+                    for (java.util.Map.Entry<Register, Register> i : ((Map) src.data).entrySet())
+                    if (((Map)dst.data).containsKey(i.getKey()))
+                        ((Map)dst.data).remove(i.getKey());
+                    break;
+                default:
+                    return Result.ERR;
+            }
+            return Result.OK;
+        });
+
+        funcList.put("type", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+
+            Register reg = new Register();
+            reg.type = RegType.STR;
+            reg.readOnly = true;
+            switch (src.type) {
+                case INT: reg.data = "int"; break;
+                case CHAR: reg.data = "char"; break;
+                case FLOAT: reg.data = "float"; break;
+                case STR: reg.data = "str"; break;
+                case CODE: reg.data = "code"; break;
+                case MAP: reg.data = "map"; break;
+            }
+            return funcList.get("mov").run(dst, reg);
+        });
+
+        funcList.put("len", (dst, src) -> {
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            Register reg = new Register();
+            reg.type = RegType.INT;
+            reg.readOnly = true;
+            if (src == null)
+            {
+                if (useReg == null) return Result.ERR;
+                if (useReg.type != RegType.MAP) return Result.ERR;
+                if (!(useReg.data instanceof Map)) return Result.ERR;
+                reg.data = ((Map)useReg.data).size();
+            }
+            else
+            {
+                if (src.type != RegType.STR) return Result.ERR;
+                reg.data = ((String)src.data).length();
+            }
+            return funcList.get("mov").run(dst, reg);
+        });
+
+        funcList.put("ctn", (dst, src) -> {
+            if (dst == null) return Result.ERR;
+            Register reg = new Register();
+            reg.type = RegType.INT;
+            reg.readOnly = true;
+            if (src == null)
+            {
+                if (useReg == null) return Result.ERR;
+                if (useReg.type != RegType.MAP) return Result.ERR;
+                if (!(useReg.data instanceof Map)) return Result.ERR;
+                reg.data = ((Map)useReg.data).containsKey(dst) ? 1 : 0;
+            }
+            else
+            {
+                if (src.type != RegType.STR) return Result.ERR;
+                if (dst.type != RegType.STR) return Result.ERR;
+                reg.data = ((String)dst.data).contains((String)src.data) ? 1 : 0;
+            }
+            return funcList.get("mov").run(stateReg, reg);
+        });
+
+        funcList.put("equ", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (src.type != RegType.STR) return Result.ERR;
+            if (dst.type != RegType.STR) return Result.ERR;
+            Register reg = new Register();
+            reg.type = RegType.INT;
+            reg.readOnly = true;
+            reg.data = ((String)dst.data).equals((String)src.data) ? 0 : 1;
+            return funcList.get("mov").run(stateReg, reg);
         });
     }
 
