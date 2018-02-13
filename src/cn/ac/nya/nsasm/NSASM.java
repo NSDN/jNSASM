@@ -32,7 +32,7 @@ public class NSASM {
         @Override
         public boolean equals(Object obj) {
             if (obj instanceof Register)
-                return data == ((Register) obj).data;
+                return type.equals(((Register) obj).type) && data.equals(((Register) obj).data);
             return false;
         }
 
@@ -46,6 +46,12 @@ public class NSASM {
             data = reg.data;
             strPtr = reg.strPtr;
             readOnly = reg.readOnly;
+        }
+
+        public Register() {}
+
+        public Register(Register reg) {
+            copy(reg);
         }
     }
 
@@ -94,6 +100,7 @@ public class NSASM {
     }
 
     private boolean verifyBound(String var, char left, char right) {
+        if (var.isEmpty()) return false;
         return var.charAt(0) == left && var.charAt(var.length() - 1) == right;
     }
 
@@ -1186,11 +1193,11 @@ public class NSASM {
                 if (!(reg.data instanceof Map)) return Result.ERR;
                 if (((Map)useReg.data).containsKey(reg))
                     ((Map)useReg.data).remove(reg);
-                ((Map)useReg.data).put(reg, src);
+                ((Map)useReg.data).put(new Register(reg), new Register(src));
             } else {
                 if (((Map)useReg.data).containsKey(dst))
                     ((Map)useReg.data).remove(dst);
-                ((Map)useReg.data).put(dst, src);
+                ((Map)useReg.data).put(new Register(dst), new Register(src));
             }
 
             return Result.OK;
