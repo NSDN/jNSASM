@@ -7,7 +7,7 @@ import java.util.*;
  */
 public class NSASM {
 
-    public static final String version = "0.45 (Java)";
+    public static final String version = "0.46 (Java)";
 
     public enum RegType {
         CHAR, STR, INT, FLOAT, CODE, MAP
@@ -414,11 +414,16 @@ public class NSASM {
         }
     }
 
+    /* TODO: Should override in subclass */
+    protected NSASM instance(NSASM base, String[][] code) {
+        return new NSASM(base, code);
+    }
+
     protected Register eval(Register register) {
         if (register == null) return null;
         if (register.type != RegType.CODE) return null;
         String[][] code = Util.getSegments(register.data.toString());
-        return new NSASM(this, code).run();
+        return instance(this, code).run();
     }
 
     private String[] convToArray(String var) {
