@@ -7,7 +7,7 @@ import java.util.*;
  */
 public class NSASM {
 
-    public static final String version = "0.46 (Java)";
+    public static final String version = "0.47 (Java)";
 
     public enum RegType {
         CHAR, STR, INT, FLOAT, CODE, MAP
@@ -216,6 +216,10 @@ public class NSASM {
                     if (
                         (var.contains("x") || var.contains("X")) &&
                         (var.contains("h") || var.contains("H"))
+                    ) return null;
+                    if (
+                        (var.charAt(0) < '0' || var.charAt(0) > '9') &&
+                        (var.charAt(0) != '+' || var.charAt(0) != '-')
                     ) return null;
                     try {
                         tmp = Integer.valueOf(
