@@ -7,7 +7,7 @@ import java.util.*;
  */
 public class NSASM {
 
-    public static final String version = "0.47 (Java)";
+    public static final String version = "0.48 (Java)";
 
     public enum RegType {
         CHAR, STR, INT, FLOAT, CODE, MAP
@@ -529,6 +529,7 @@ public class NSASM {
             case '-': dst.data = (int) convValue(dst.data, RegType.INT) - (int) convValue(src.data, RegType.INT); break;
             case '*': dst.data = (int) convValue(dst.data, RegType.INT) * (int) convValue(src.data, RegType.INT); break;
             case '/': dst.data = (int) convValue(dst.data, RegType.INT) / (int) convValue(src.data, RegType.INT); break;
+            case '%': dst.data = (int) convValue(dst.data, RegType.INT) % (int) convValue(src.data, RegType.INT); break;
             case '&': dst.data = (int) convValue(dst.data, RegType.INT) & (int) convValue(src.data, RegType.INT); break;
             case '|': dst.data = (int) convValue(dst.data, RegType.INT) | (int) convValue(src.data, RegType.INT); break;
             case '~': dst.data = ~(int) convValue(dst.data, RegType.INT); break;
@@ -546,6 +547,7 @@ public class NSASM {
             case '-': dst.data = (char) convValue(dst.data, RegType.CHAR) - (char) convValue(src.data, RegType.CHAR); break;
             case '*': dst.data = (char) convValue(dst.data, RegType.CHAR) * (char) convValue(src.data, RegType.CHAR); break;
             case '/': dst.data = (char) convValue(dst.data, RegType.CHAR) / (char) convValue(src.data, RegType.CHAR); break;
+            case '%': dst.data = (char) convValue(dst.data, RegType.CHAR) % (char) convValue(src.data, RegType.CHAR); break;
             case '&': dst.data = (char) convValue(dst.data, RegType.CHAR) & (char) convValue(src.data, RegType.CHAR); break;
             case '|': dst.data = (char) convValue(dst.data, RegType.CHAR) | (char) convValue(src.data, RegType.CHAR); break;
             case '~': dst.data = ~(char) convValue(dst.data, RegType.CHAR); break;
@@ -937,6 +939,16 @@ public class NSASM {
                 return calc(dst, eval(src), '/');
             else
                 return calc(dst, src, '/');
+        });
+
+        funcList.put("mod", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            if (src.type == RegType.CODE)
+                return calc(dst, eval(src), '%');
+            else
+                return calc(dst, src, '%');
         });
 
         funcList.put("and", (dst, src) -> {
