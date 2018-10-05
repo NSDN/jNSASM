@@ -36,6 +36,20 @@ public class Util {
         return tmp;
     }
 
+    private static String cleanSymbolLeft(String var, String symbol, String trashA, String trashB) {
+        String tmp = var;
+        while (tmp.contains(trashA + symbol) || tmp.contains(trashB + symbol))
+            tmp = tmp.replace(trashA + symbol, symbol).replace(trashB + symbol, symbol);
+        return tmp;
+    }
+
+    private static String cleanSymbolRight(String var, String symbol, String trashA, String trashB) {
+        String tmp = var;
+        while (tmp.contains(symbol + trashA) || tmp.contains(symbol + trashB))
+            tmp = tmp.replace(symbol + trashA, symbol).replace(symbol + trashB, symbol);
+        return tmp;
+    }
+
     public static String formatLine(String var) {
         if (var.isEmpty()) return "";
         while (var.contains("\r")) {
@@ -92,6 +106,12 @@ public class Util {
             varBuf = varBuf.replace("\n\n", "\n");
         }
         scanner.close();
+
+        varBuf = cleanSymbolRight(varBuf, "<", "\t", " ");
+        varBuf = cleanSymbolLeft(varBuf, ">", "\t", " ");
+        varBuf = cleanSymbolRight(varBuf, "[", "\t", " ");
+        varBuf = cleanSymbolLeft(varBuf, "]", "\t", " ");
+
         return varBuf;
     }
 
@@ -169,12 +189,23 @@ public class Util {
         LinkedList<String> pub = new LinkedList<>();
         String varBuf = var;
 
-        varBuf = formatCode(varBuf);
-        varBuf = repairBrackets(varBuf, "{", "}");
-        varBuf = repairBrackets(varBuf, "(", ")");
-        varBuf = formatCode(varBuf);
+        List<DefBlock> blocks = getDefBlocks(varBuf);
+        if (blocks != null)
+            varBuf = doPreProcess(blocks, varBuf);
 
-        varBuf = formatLambda(varBuf);
+        if (blocks == null || varBuf == null)
+        {
+            varBuf = var;
+
+            varBuf = formatCode(varBuf);
+            varBuf = repairBrackets(varBuf, "{", "}");
+            varBuf = repairBrackets(varBuf, "(", ")");
+            varBuf = formatCode(varBuf);
+
+            varBuf = formatLambda(varBuf);
+        }
+
+        // Here we got formated code
 
         Scanner scanner = new Scanner(varBuf);
 
@@ -244,6 +275,211 @@ public class Util {
 
         }
         return result;
+    }
+
+    public static List<String> parseArgs(String str, char split) {
+        List<String> args = new ArrayList<>();
+
+        final int IDLE = 0, RUN = 1;
+        int state = IDLE;
+        StringBuilder builder = new StringBuilder();
+        char old, now = '\0';
+        for (int i = 0; i < str.length(); i++) {
+            old = now;
+            now = str.charAt(i);
+            switch(state) {
+                case IDLE:
+                    if (now == split) {
+                        args.add(builder.toString());
+                        builder = new StringBuilder();
+                        continue;
+                    }
+                    if (now == ' ' || now == '\t')
+                        continue;
+                    builder.append(now);
+                    if (now == '\'' || now == '\"')
+                        state = RUN;
+                    break;
+                case RUN:
+                    builder.append(now);
+                    if (now == '\'' || now == '\"')
+                        if (old != '\\')
+                            state = IDLE;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if (state == IDLE && builder.length() != 0)
+            args.add(builder.toString());
+
+        return args;
+    }
+
+    public static class DefBlock {
+        public String name;
+        public List<String> args;
+        public String block;
+
+        public DefBlock() {
+            name = "";
+            args = new ArrayList<>();
+            block = "";
+        }
+
+        public DefBlock(DefBlock defBlock) {
+            name = defBlock.name;
+            args = new ArrayList<>(defBlock.args);
+            block = defBlock.name;
+        }
+
+        public static DefBlock getBlock(String head, String body) {
+            if (!head.contains("<") || !head.endsWith(">"))
+                return null;
+
+            DefBlock ret = new DefBlock();
+            ret.name = head.substring(1).split("<")[0];
+            String arg = head.split("[<>]")[1];
+            ret.args = parseArgs(arg, ',');
+            ret.block = body;
+
+            if (ret.block.contains(ret.name)) // Self-call not allowed
+                return null;
+
+            return ret;
+        }
+    }
+
+    public static List<DefBlock> getDefBlocks(String var) {
+        List<DefBlock> blocks = new ArrayList<>();
+        String varBuf = var;
+
+        varBuf = formatCode(varBuf);
+        varBuf = repairBrackets(varBuf, "{", "}");
+        varBuf = repairBrackets(varBuf, "(", ")");
+        varBuf = formatCode(varBuf);
+
+        varBuf = formatLambda(varBuf);
+
+        Scanner scanner = new Scanner(varBuf);
+
+        String head = "", body = "", tmp; DefBlock blk;
+        final int IDLE = 0, RUN = 1;
+        int state = IDLE, count = 0;
+        while (scanner.hasNextLine()) {
+            switch (state) {
+                case IDLE:
+                    head = scanner.nextLine();
+                    count = 0; body = "";
+                    if (head.contains("{")) {
+                        head = head.replace("{", "");
+                        count += 1;
+                        state = RUN;
+                    }
+                    break;
+                case RUN:
+                    if (scanner.hasNextLine()) {
+                        tmp = scanner.nextLine();
+                        if (tmp.contains("{"))
+                            count += 1;
+                        else if (tmp.contains("}"))
+                            count -= 1;
+                        if (tmp.contains("(") && tmp.contains(")")) {
+                            if (tmp.contains("{") && tmp.contains("}"))
+                                count -= 1;
+                        }
+                        if (count == 0) {
+                            if (head.startsWith(".") && !head.startsWith(".<")) {
+                                blk = DefBlock.getBlock(head, body);
+                                if (blk == null) {
+                                    print("Error at: \"" + head + "\"\n\n");
+                                    return null;
+                                }
+                                blocks.add(blk);
+                            }
+                            state = IDLE;
+                        }
+                        body = body + (tmp + "\n");
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return blocks;
+    }
+
+    public static class DefCall {
+        public String name;
+        public List<String> args;
+
+        public DefCall() {
+            name = "";
+            args = new ArrayList<>();
+        }
+
+        public DefCall(DefCall defCall) {
+            name = defCall.name;
+            args = new ArrayList<>(defCall.args);
+        }
+
+        public static DefCall getCall(String str) {
+            DefCall ret = new DefCall();
+            ret.name = str.split("<")[0];
+            String arg = str.split("[<>]")[1];
+            ret.args = parseArgs(arg, ',');
+
+            return ret;
+        }
+    }
+
+    public static String doPreProcess(List<DefBlock> blocks, String var) {
+        String varBuf = var;
+
+        varBuf = formatCode(varBuf);
+        varBuf = repairBrackets(varBuf, "{", "}");
+        varBuf = repairBrackets(varBuf, "(", ")");
+        varBuf = formatCode(varBuf);
+
+        varBuf = formatLambda(varBuf);
+
+        Scanner scanner = new Scanner(varBuf);
+        StringBuilder builder = new StringBuilder("");
+        String line, block; DefCall call; boolean defRes;
+        while (scanner.hasNextLine()) {
+            line = scanner.nextLine();
+            if (line.contains("<") && !line.startsWith("<") && line.endsWith(">") && !line.split("<")[0].contains(" ")) {
+                call = DefCall.getCall(line); defRes = false;
+                for (DefBlock blk : blocks) {
+                    if (blk.name.equals(call.name))
+                        if (blk.args.size() == call.args.size()) {
+                            block = blk.block;
+                            for (int i = 0; i < call.args.size(); i++) {
+                                block = block.replace(blk.args.get(i) + ",", call.args.get(i) + ",");
+                                block = block.replace(blk.args.get(i) + "\n", call.args.get(i) + "\n");
+                            }
+                            builder.append(block);
+                            builder.append("\n");
+                            defRes = true;
+                            break;
+                        }
+                }
+                if (!defRes) {
+                    print("Error at: \"" + line + "\"\n\n");
+                    return null;
+                }
+            } else {
+                builder.append(line);
+                builder.append("\n");
+            }
+        }
+
+        varBuf = builder.toString();
+        varBuf = formatCode(varBuf);
+
+        return varBuf;
     }
 
     public static String read(String path) {
