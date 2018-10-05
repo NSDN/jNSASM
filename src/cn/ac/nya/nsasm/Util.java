@@ -193,8 +193,7 @@ public class Util {
         if (blocks != null)
             varBuf = doPreProcess(blocks, varBuf);
 
-        if (blocks == null || varBuf == null)
-        {
+        if (blocks == null || varBuf == null) {
             varBuf = var;
 
             varBuf = formatCode(varBuf);
@@ -272,7 +271,6 @@ public class Util {
                 else
                     return null;
             }
-
         }
         return result;
     }

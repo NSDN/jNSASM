@@ -7,7 +7,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4b3e3122-5df7-4601-9c9d-ddf87614d578" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/src/cn/ac/nya/nsasm/NSASM.java" afterPath="$PROJECT_DIR$/src/cn/ac/nya/nsasm/NSASM.java" />
       <change beforePath="$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java" afterPath="$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
@@ -26,10 +25,10 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="NSASM.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="NSASM.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/NSASM.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="660">
+            <state relative-caret-position="30">
               <caret line="57" column="58" lean-forward="false" selection-start-line="57" selection-start-column="58" selection-end-line="57" selection-end-column="58" />
               <folding />
             </state>
@@ -56,16 +55,16 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Util.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="Util.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2295">
-              <caret line="207" column="36" lean-forward="true" selection-start-line="207" selection-start-column="36" selection-end-line="207" selection-end-column="36" />
+            <state relative-caret-position="423">
+              <caret line="195" column="47" lean-forward="true" selection-start-line="195" selection-start-column="47" selection-end-line="195" selection-end-column="47" />
               <folding>
                 <element signature="e#204#205#0" expanded="true" />
                 <element signature="e#243#244#0" expanded="true" />
-                <element signature="e#21087#21088#0" expanded="true" />
-                <element signature="e#21122#21123#0" expanded="true" />
+                <element signature="e#21078#21079#0" expanded="true" />
+                <element signature="e#21113#21114#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -142,12 +141,12 @@
         <option value="$PROJECT_DIR$/new.ns" />
         <option value="$PROJECT_DIR$/test.ns" />
         <option value="$PROJECT_DIR$/src/cn/ac/nya/nsasm/Launcher.java" />
-        <option value="$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java" />
         <option value="$PROJECT_DIR$/src/cn/ac/nya/nsasm/NSASM.java" />
+        <option value="$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
+  <component name="ProjectFrameBounds" extendedState="7">
     <option name="x" value="-8" />
     <option name="y" value="-8" />
     <option name="width" value="1936" />
@@ -370,7 +369,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
+    <frame x="-8" y="-8" width="1936" height="1056" extended-state="7" />
     <editor active="true" />
     <layout>
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -612,19 +611,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2295">
-          <caret line="207" column="36" lean-forward="true" selection-start-line="207" selection-start-column="36" selection-end-line="207" selection-end-column="36" />
-          <folding>
-            <element signature="e#204#205#0" expanded="true" />
-            <element signature="e#243#244#0" expanded="true" />
-            <element signature="e#21087#21088#0" expanded="true" />
-            <element signature="e#21122#21123#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/Launcher.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="660">
@@ -635,9 +621,22 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/NSASM.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="660">
+        <state relative-caret-position="30">
           <caret line="57" column="58" lean-forward="false" selection-start-line="57" selection-start-column="58" selection-end-line="57" selection-end-column="58" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="423">
+          <caret line="195" column="47" lean-forward="true" selection-start-line="195" selection-start-column="47" selection-end-line="195" selection-end-column="47" />
+          <folding>
+            <element signature="e#204#205#0" expanded="true" />
+            <element signature="e#243#244#0" expanded="true" />
+            <element signature="e#21078#21079#0" expanded="true" />
+            <element signature="e#21113#21114#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
