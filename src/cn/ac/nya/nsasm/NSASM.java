@@ -7,7 +7,7 @@ import java.util.*;
  */
 public class NSASM {
 
-    public static final String version = "0.45 (Java)";
+    public static final String version = "0.48 (Java)";
 
     public enum RegType {
         CHAR, STR, INT, FLOAT, CODE, MAP
@@ -217,6 +217,10 @@ public class NSASM {
                         (var.contains("x") || var.contains("X")) &&
                         (var.contains("h") || var.contains("H"))
                     ) return null;
+                    if (
+                        (var.charAt(0) < '0' || var.charAt(0) > '9') &&
+                        (var.charAt(0) != '+' || var.charAt(0) != '-')
+                    ) return null;
                     try {
                         tmp = Integer.valueOf(
                                 var.replace("h", "").replace("H", "")
@@ -414,11 +418,16 @@ public class NSASM {
         }
     }
 
+    /* TODO: Should override in subclass */
+    protected NSASM instance(NSASM base, String[][] code) {
+        return new NSASM(base, code);
+    }
+
     protected Register eval(Register register) {
         if (register == null) return null;
         if (register.type != RegType.CODE) return null;
         String[][] code = Util.getSegments(register.data.toString());
-        return new NSASM(this, code).run();
+        return instance(this, code).run();
     }
 
     private String[] convToArray(String var) {
@@ -520,6 +529,7 @@ public class NSASM {
             case '-': dst.data = (int) convValue(dst.data, RegType.INT) - (int) convValue(src.data, RegType.INT); break;
             case '*': dst.data = (int) convValue(dst.data, RegType.INT) * (int) convValue(src.data, RegType.INT); break;
             case '/': dst.data = (int) convValue(dst.data, RegType.INT) / (int) convValue(src.data, RegType.INT); break;
+            case '%': dst.data = (int) convValue(dst.data, RegType.INT) % (int) convValue(src.data, RegType.INT); break;
             case '&': dst.data = (int) convValue(dst.data, RegType.INT) & (int) convValue(src.data, RegType.INT); break;
             case '|': dst.data = (int) convValue(dst.data, RegType.INT) | (int) convValue(src.data, RegType.INT); break;
             case '~': dst.data = ~(int) convValue(dst.data, RegType.INT); break;
@@ -537,6 +547,7 @@ public class NSASM {
             case '-': dst.data = (char) convValue(dst.data, RegType.CHAR) - (char) convValue(src.data, RegType.CHAR); break;
             case '*': dst.data = (char) convValue(dst.data, RegType.CHAR) * (char) convValue(src.data, RegType.CHAR); break;
             case '/': dst.data = (char) convValue(dst.data, RegType.CHAR) / (char) convValue(src.data, RegType.CHAR); break;
+            case '%': dst.data = (char) convValue(dst.data, RegType.CHAR) % (char) convValue(src.data, RegType.CHAR); break;
             case '&': dst.data = (char) convValue(dst.data, RegType.CHAR) & (char) convValue(src.data, RegType.CHAR); break;
             case '|': dst.data = (char) convValue(dst.data, RegType.CHAR) | (char) convValue(src.data, RegType.CHAR); break;
             case '~': dst.data = ~(char) convValue(dst.data, RegType.CHAR); break;
@@ -928,6 +939,16 @@ public class NSASM {
                 return calc(dst, eval(src), '/');
             else
                 return calc(dst, src, '/');
+        });
+
+        funcList.put("mod", (dst, src) -> {
+            if (src == null) return Result.ERR;
+            if (dst == null) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
+            if (src.type == RegType.CODE)
+                return calc(dst, eval(src), '%');
+            else
+                return calc(dst, src, '%');
         });
 
         funcList.put("and", (dst, src) -> {
