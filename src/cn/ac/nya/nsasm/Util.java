@@ -342,9 +342,6 @@ public class Util {
             ret.args = parseArgs(arg, ',');
             ret.block = body;
 
-            if (ret.block.contains(ret.name)) // Self-call not allowed
-                return null;
-
             return ret;
         }
     }
