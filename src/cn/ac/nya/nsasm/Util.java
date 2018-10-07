@@ -184,16 +184,16 @@ public class Util {
         return var;
     }
 
-    public static String[][] getSegments(String var) {
-        LinkedHashMap<String, String> segBuf = new LinkedHashMap<>();
-        LinkedList<String> pub = new LinkedList<>();
+    public static String preProcessCode(String var)
+    {
         String varBuf = var;
 
         List<DefBlock> blocks = getDefBlocks(varBuf);
         if (blocks != null)
             varBuf = doPreProcess(blocks, varBuf);
 
-        if (blocks == null || varBuf == null) {
+        if (blocks == null || varBuf == null)
+        {
             varBuf = var;
 
             varBuf = formatCode(varBuf);
@@ -203,6 +203,15 @@ public class Util {
 
             varBuf = formatLambda(varBuf);
         }
+
+        return varBuf;
+    }
+
+    public static String[][] getSegments(String var) {
+        LinkedHashMap<String, String> segBuf = new LinkedHashMap<>();
+        LinkedList<String> pub = new LinkedList<>();
+
+        String varBuf = preProcessCode(var);
 
         // Here we got formated code
 
@@ -501,6 +510,11 @@ public class Util {
     }
 
     public static void run(String path) {
+        if (path.endsWith(".nsb")) {
+            binary(path);
+            return;
+        }
+
         String str = read(path);
         if (str == null) return;
 
@@ -586,7 +600,7 @@ public class Util {
         print("\nNSASM running finished.\n\n");
     }
 
-    public static void console() {
+    public static void interactive() {
         Util.print("Now in console mode.\n\n");
         String buf;
         int lines = 1; Result result;
@@ -625,6 +639,183 @@ public class Util {
 
     public static void gui() {
         new Editor().show();
+    }
+
+    private static void putToList(List<Byte> list, int value)
+    {
+        list.add((byte) (value & 0xFF));
+        list.add((byte) ((value >> 8) & 0xFF));
+    }
+
+    private static void putToList(List<Byte> list, String value)
+    {
+        for (int i = 0; i < value.length(); i++)
+            list.add((byte) value.charAt(i));
+    }
+
+    public static String compile(String inPath, String outPath)
+    {
+        String str = read(inPath);
+        if (str == null) return null;
+
+        if (outPath == null) return preProcessCode(str);
+
+        int heap = 64, stack = 32, regs = 16;
+
+        String conf = getSegment(str, ".<conf>");
+        if (conf == null) {
+            print("Conf load error.\n");
+            print("At file: " + inPath + "\n\n");
+            return null;
+        }
+        if (!conf.isEmpty()) {
+            Scanner confReader = new Scanner(conf);
+            try {
+                String buf;
+                while (confReader.hasNextLine()) {
+                    buf = confReader.nextLine();
+                    switch (buf.split(" ")[0]) {
+                        case "heap":
+                            heap = Integer.valueOf(buf.split(" ")[1]);
+                            break;
+                        case "stack":
+                            stack = Integer.valueOf(buf.split(" ")[1]);
+                            break;
+                        case "reg":
+                            regs = Integer.valueOf(buf.split(" ")[1]);
+                            break;
+                    }
+                }
+            } catch (Exception e) {
+                print("Conf load error.\n");
+                print("At file: " + inPath + "\n\n");
+                return null;
+            }
+        }
+
+        String[][] code = getSegments(str);
+        int segCnt = code.length;
+
+        List<Byte> bytes = new ArrayList<Byte>();
+        putToList(bytes, "NS");
+        putToList(bytes, 0xFFFF);
+        putToList(bytes, heap);
+        putToList(bytes, stack);
+        putToList(bytes, regs);
+        putToList(bytes, segCnt);
+
+        for (String[] seg : code) {
+            putToList(bytes, 0xA5A5);
+            putToList(bytes, seg[0]);
+            putToList(bytes, 0xAAAA);
+            putToList(bytes, seg[1]);
+        }
+
+        putToList(bytes,0xFFFF);
+        int sum = 0;
+        for (int i = 0; i < bytes.size(); i++)
+            sum = (sum + (bytes.get(i) & 0xFF)) & 0xFFFF;
+        putToList(bytes, sum);
+
+        try {
+            FileOutputStream stream = new FileOutputStream(outPath);
+            byte[] byteArray = new byte[bytes.size()];
+            for (int i = 0; i < bytes.size(); i++)
+                byteArray[i] = bytes.get(i);
+            stream.write(byteArray);
+            stream.flush();
+            stream.close();
+        } catch (Exception e) {
+            print("File write failed.\n");
+            print("At file: " + outPath + "\n\n");
+            return null;
+        }
+
+        return preProcessCode(str);
+    }
+
+    private static int getUint16(byte[] data, int offset)
+    {
+        int res = 0;
+        if (data.length >= offset + 1)
+            res = ((data[offset] & 0xFF) | ((data[offset + 1] & 0xFF) << 8));
+        return res;
+    }
+
+    private static String getStr2(byte[] data, int offset)
+    {
+        String res = "";
+        if (data.length >= offset + 1)
+        {
+            res += (char) data[offset];
+            res += (char) data[offset + 1];
+        }
+        return res;
+    }
+
+    public static void binary(String path)
+    {
+        byte[] data = null;
+        try {
+            FileInputStream stream = new FileInputStream(path);
+            data = new byte[stream.available()];
+            int siz = stream.read(data);
+            if (siz == -1) return;
+        } catch (Exception e) {
+            print("File read error.\n");
+            print("At file: " + path + "\n\n");
+            return;
+        }
+
+        if (data.length < 16) return;
+
+        if (!getStr2(data, 0).equals("NS")) return;
+        if (getUint16(data, 2) != 0xFFFF) return;
+
+        int sum = 0;
+        for (int i = 0; i < data.length - 2; i++)
+            sum = (sum + (data[i] & 0xFF)) & 0xFFFF;
+        if (sum != getUint16(data, data.length - 2))
+            return;
+
+        int heap, stack, regs, segCnt;
+        heap = getUint16(data, 4);
+        stack = getUint16(data, 6);
+        regs = getUint16(data, 8);
+        segCnt = getUint16(data, 10);
+
+        int offset = 12, segPos = -1;
+        String[][] code = new String[segCnt][];
+        for (int i = 0; i < segCnt; i++)
+            code[i] = new String[2];
+
+        final int SEG_NAME = 0, SEG_CODE = 1;
+        int state = SEG_NAME, offmax = data.length - 1;
+        while (offset <= offmax - 4) {
+            if (getUint16(data, offset) == 0xA5A5) {
+                if (segPos >= segCnt - 1)
+                    return;
+                segPos += 1; offset += 2;
+                state = SEG_NAME;
+                code[segPos][0] = "";
+            } else if (getUint16(data, offset) == 0xAAAA) {
+                offset += 2;
+                state = SEG_CODE;
+                code[segPos][1] = "";
+            } else {
+                if (state == SEG_NAME)
+                    code[segPos][0] += (char)data[offset];
+                else if (state == SEG_CODE)
+                    code[segPos][1] += (char)data[offset];
+                offset += 1;
+            }
+        }
+
+        if (getUint16(data, offset) != 0xFFFF) return;
+
+        NSASM nsasm = new NSASM(heap, stack, regs, code);
+        nsasm.run();
+        print("\nNSASM running finished.\n\n");
     }
 
 }
