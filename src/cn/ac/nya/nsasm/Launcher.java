@@ -35,10 +35,10 @@ public class Launcher {
                     Util.print("\n" + res + "\n");
                     return;
                 } else  {
-                    String[][] segs = Util.getSegments(Util.read(args[1]));
+                    String[][] segs = Util.getSegments(Util.read(args[0]));
                     NSASM nsasm = new NSASM(64, 32, 32, segs);
                     long now = System.nanoTime();
-                    nsasm.call(args[0]);
+                    nsasm.call(args[1]);
                     long end = System.nanoTime();
                     double ms = (double) (end - now) / 1e6;
                     Util.print("This script took " +

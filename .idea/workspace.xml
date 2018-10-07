@@ -6,12 +6,7 @@
     </artifacts-to-build>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4b3e3122-5df7-4601-9c9d-ddf87614d578" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cn/ac/nya/nsasm/Launcher.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/cn/ac/nya/nsasm/Launcher.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cn/ac/nya/nsasm/NSASM.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/cn/ac/nya/nsasm/NSASM.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java" afterDir="false" />
-    </list>
+    <list default="true" id="4b3e3122-5df7-4601-9c9d-ddf87614d578" name="Default" comment="" />
     <ignored path="$PROJECT_DIR$/out/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -26,6 +21,7 @@
     <session id="1000664537">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
+          <entry key="project.closed" value="1" />
           <entry key="project.open.time.6" value="1" />
           <entry key="project.opened" value="1" />
         </counts>
@@ -348,7 +344,6 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.12313433" />
       <window_info id="Structure" order="1" weight="0.25" />
