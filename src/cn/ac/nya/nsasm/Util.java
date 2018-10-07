@@ -184,16 +184,14 @@ public class Util {
         return var;
     }
 
-    public static String preProcessCode(String var)
-    {
+    public static String preProcessCode(String var) {
         String varBuf = var;
 
         List<DefBlock> blocks = getDefBlocks(varBuf);
         if (blocks != null)
             varBuf = doPreProcess(blocks, varBuf);
 
-        if (blocks == null || varBuf == null)
-        {
+        if (blocks == null || varBuf == null) {
             varBuf = var;
 
             varBuf = formatCode(varBuf);
@@ -641,20 +639,17 @@ public class Util {
         new Editor().show();
     }
 
-    private static void putToList(List<Byte> list, int value)
-    {
+    private static void putToList(List<Byte> list, int value) {
         list.add((byte) (value & 0xFF));
         list.add((byte) ((value >> 8) & 0xFF));
     }
 
-    private static void putToList(List<Byte> list, String value)
-    {
+    private static void putToList(List<Byte> list, String value) {
         for (int i = 0; i < value.length(); i++)
             list.add((byte) value.charAt(i));
     }
 
-    public static String compile(String inPath, String outPath)
-    {
+    public static String compile(String inPath, String outPath) {
         String str = read(inPath);
         if (str == null) return null;
 
@@ -734,27 +729,23 @@ public class Util {
         return preProcessCode(str);
     }
 
-    private static int getUint16(byte[] data, int offset)
-    {
+    private static int getUint16(byte[] data, int offset) {
         int res = 0;
         if (data.length >= offset + 1)
             res = ((data[offset] & 0xFF) | ((data[offset + 1] & 0xFF) << 8));
         return res;
     }
 
-    private static String getStr2(byte[] data, int offset)
-    {
+    private static String getStr2(byte[] data, int offset) {
         String res = "";
-        if (data.length >= offset + 1)
-        {
+        if (data.length >= offset + 1) {
             res += (char) data[offset];
             res += (char) data[offset + 1];
         }
         return res;
     }
 
-    public static void binary(String path)
-    {
+    public static void binary(String path) {
         byte[] data = null;
         try {
             FileInputStream stream = new FileInputStream(path);
