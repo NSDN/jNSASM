@@ -18,7 +18,7 @@ public class Launcher {
                 if (args[0].equals("c")) {
                     String res = Util.compile(args[1], args[2]);
                     if (res != null)
-                        Util.print("Compilation OK.\n");
+                        Util.print("Compilation OK.\n\n");
                     return;
                 }
             } else if (args.length == 2) {
