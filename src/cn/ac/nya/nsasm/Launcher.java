@@ -12,9 +12,16 @@ public class Launcher {
         Util.print("\n\n");
 
         if (args.length < 1) {
-            Util.print("Usage: nsasm [c/r/g] [FILE]\n\n");
+            Util.print("Usage: nsasm [c/r/i/g] [FILE]\n\n");
         } else {
-            if (args.length == 2) {
+            if (args.length == 3) {
+                if (args[0].equals("c")) {
+                    String res = Util.compile(args[1], args[2]);
+                    if (res != null)
+                        Util.print("Compilation OK.\n\n");
+                    return;
+                }
+            } else if (args.length == 2) {
                 if (args[0].equals("r")) {
                     long now = System.nanoTime();
                     Util.run(args[1]);
@@ -23,11 +30,15 @@ public class Launcher {
                     Util.print("This script took " +
                         Double.toString(ms) + "ms.\n\n");
                     return;
-                } else {
-                    String[][] segs = Util.getSegments(Util.read(args[1]));
+                } else if (args[0].equals("c")) {
+                    String res = Util.compile(args[1], null);
+                    Util.print("\n" + res + "\n");
+                    return;
+                } else  {
+                    String[][] segs = Util.getSegments(Util.read(args[0]));
                     NSASM nsasm = new NSASM(64, 32, 32, segs);
                     long now = System.nanoTime();
-                    nsasm.call(args[0]);
+                    nsasm.call(args[1]);
                     long end = System.nanoTime();
                     double ms = (double) (end - now) / 1e6;
                     Util.print("This script took " +
@@ -35,8 +46,8 @@ public class Launcher {
                     return;
                 }
             }
-            if (args[0].equals("c")) {
-                Util.console();
+            if (args[0].equals("i")) {
+                Util.interactive();
                 return;
             }
             if (args[0].equals("g")) {
