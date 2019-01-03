@@ -7,7 +7,7 @@ import java.util.*;
  */
 public class NSASM {
 
-    public static final String version = "0.51 (Java)";
+    public static final String version = "0.52 (Java)";
 
     public enum RegType {
         CHAR, STR, INT, FLOAT, CODE, MAP
@@ -841,13 +841,14 @@ public class NSASM {
                                 res = res.concat(parts[i]);
                                 if (i < parts.length - 2) res = res.concat("\n");
                             }
+                            dst.data = res;
                         }
                     } else if (src.type == RegType.CODE) {
                         Register register = eval(src);
                         if (register == null) return Result.ERR;
                         dst.data = dst.data.toString().concat('\n' + register.data.toString());
                     } else if (src.type == RegType.STR) {
-                        dst.data = dst.data.toString().concat('\n' + src.data.toString());
+                        dst.data = dst.data.toString().concat('\n' + src.data.toString().substring(src.strPtr));
                     } else return Result.ERR;
                 } else if (dst.type == RegType.CODE) {
                     if (dst.readOnly) return Result.ERR;
@@ -859,11 +860,12 @@ public class NSASM {
                                 res = res.concat(parts[i]);
                                 if (i < parts.length - 2) res = res.concat("\n");
                             }
+                            dst.data = res;
                         }
                     } else if (src.type == RegType.CODE) {
                         dst.data = dst.data.toString().concat('\n' + src.data.toString());
                     } else if (src.type == RegType.STR) {
-                        dst.data = dst.data.toString().concat('\n' + src.data.toString());
+                        dst.data = dst.data.toString().concat('\n' + src.data.toString().substring(src.strPtr));
                     } else return Result.ERR;
                 } else return Result.ERR;
             } else {
@@ -1189,7 +1191,10 @@ public class NSASM {
             if (dst == null) return Result.ERR;
 
             if (src == null) eval(dst);
-            else dst.copy(eval(src));
+            else {
+                if (dst.readOnly) return Result.ERR;
+                dst.copy(eval(src));
+            }
 
             return Result.OK;
         });
