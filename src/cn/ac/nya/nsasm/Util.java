@@ -4,6 +4,7 @@ import cn.ac.nya.nsasm.NSASM.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.Map;
 
 /**
  * Created by drzzm on 2017.4.21.
@@ -140,7 +141,8 @@ public class Util {
     public static String formatString(String var) {
         return var.replace("\\\"", "\"").replace("\\\'", "\'")
                 .replace("\\\\", "\\").replace("\\n", "\n")
-                .replace("\\t", "\t");
+                .replace("\\t", "\t").replace("\\\"", "\"")
+                .replace("\\\'", "\'");
     }
 
     public static String formatLambda(String var) {
@@ -184,15 +186,82 @@ public class Util {
         return var;
     }
 
+    public static class _string {
+
+        public String str;
+
+        public _string() { str = ""; }
+        public _string(String s) { str = s; }
+
+        public static _string from(String s) {
+            return new _string(s);
+        }
+
+        @Override
+        public String toString() {
+            return str;
+        }
+    }
+
+    public static LinkedHashMap<String, String> getStrings(String var, _string out) {
+        LinkedHashMap<String, String> strings = new LinkedHashMap<>(); String key;
+        final int IDLE = 0, RUN = 1, DONE = 2;
+        int state = IDLE, count = 0, begin = 0, end = 0;
+        String a, b, c;
+
+        String str = var;
+        for (int i = 0; i < str.length(); i++) {
+            switch (state) {
+                case IDLE:
+                    count = begin = end = 0;
+                    if (str.charAt(i) == '\"' || str.charAt(i) == '\'') {
+                        begin = i;
+                        count = str.charAt(i) == '\"' ? 2 : 1;
+                        state = RUN;
+                    }
+                    break;
+                case RUN:
+                    if (str.charAt(i) == '\"' && str.charAt(i - 1) != '\\')
+                        count -= 2;
+                    else if (str.charAt(i) == '\'' && str.charAt(i - 1) != '\\')
+                        count -= 1;
+                    if (count <= 0) {
+                        end = i;
+                        state = DONE;
+                    }
+                    break;
+                case DONE:
+                    a = str.substring(0, begin);
+                    b = str.substring(begin, end + 1);
+                    c = str.substring(end + 1);
+                    key = "_str_" + Integer.toHexString(Integer.signum(b.hashCode()) * b.hashCode()) + "_"; // Here b's length is modified
+                    strings.put(key, b);
+                    str = a + key + c;
+                    state = IDLE;
+                    i = begin + key.length(); // Fix the i
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        out.str = str;
+
+        return strings;
+    }
+
     public static String preProcessCode(String var) {
-        String varBuf = var;
+        String str; _string _str = new _string();
+        LinkedHashMap<String, String> strings = getStrings(var, _str);
+        // Pre-process strings and chars ok
+        str = _str.str; String varBuf = str;
 
         List<DefBlock> blocks = getDefBlocks(varBuf);
         if (blocks != null)
             varBuf = doPreProcess(blocks, varBuf);
 
         if (blocks == null || varBuf == null) {
-            varBuf = var;
+            varBuf = str;
 
             varBuf = formatCode(varBuf);
             varBuf = repairBrackets(varBuf, "{", "}");
@@ -201,6 +270,9 @@ public class Util {
 
             varBuf = formatLambda(varBuf);
         }
+
+        for (Map.Entry<String, String> i : strings.entrySet())
+            varBuf = varBuf.replace(i.getKey(), i.getValue());
 
         return varBuf;
     }
@@ -212,6 +284,10 @@ public class Util {
         String varBuf = preProcessCode(var);
 
         // Here we got formated code
+
+        String str; _string _str = new _string();
+        LinkedHashMap<String, String> strings = getStrings(varBuf, _str);
+        str = _str.str; varBuf = str;
 
         Scanner scanner = new Scanner(varBuf);
 
@@ -254,7 +330,7 @@ public class Util {
 
         String[][] out = new String[segBuf.size() + 1][2];
 
-        out[0][0] = "_pub_" + Integer.toHexString(Integer.signum(var.hashCode()) * var.hashCode());
+        out[0][0] = "_pub_" + Integer.toHexString(Integer.signum(var.hashCode()) * var.hashCode()) + "_";
         out[0][1] = "";
         for (String i : pub) {
             out[0][1] = out[0][1].concat(i + "\n");
@@ -264,6 +340,10 @@ public class Util {
             out[i + 1][0] = (String) segBuf.keySet().toArray()[i];
             out[i + 1][1] = segBuf.get(out[i + 1][0]);
         }
+
+        for (int i = 0; i < out.length; i++)
+            for (Map.Entry<String, String> it : strings.entrySet())
+                out[i][1] = out[i][1].replace(it.getKey(), it.getValue());
 
         return out;
     }
@@ -292,7 +372,7 @@ public class Util {
         for (int i = 0; i < str.length(); i++) {
             old = now;
             now = str.charAt(i);
-            switch(state) {
+            switch (state) {
                 case IDLE:
                     if (now == split) {
                         args.add(builder.toString());
