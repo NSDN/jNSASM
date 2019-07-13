@@ -7,13 +7,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4b3e3122-5df7-4601-9c9d-ddf87614d578" name="Default" comment="">
-      <change afterPath="$PROJECT_DIR$/mat.ns" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/p1s.ns" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/sam.ns" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/cn/ac/nya/nsasm/NSASM.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/cn/ac/nya/nsasm/NSASM.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test.ns" beforeDir="false" afterPath="$PROJECT_DIR$/test.ns" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -30,11 +25,14 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/NSASM.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="262">
-              <caret line="302" column="25" lean-forward="true" selection-start-line="302" selection-start-column="25" selection-end-line="302" selection-end-column="25" />
+            <state relative-caret-position="722">
+              <caret line="1711" column="11" lean-forward="true" selection-start-line="1631" selection-start-column="8" selection-end-line="1711" selection-end-column="11" />
+              <folding>
+                <element signature="e#17424#17425#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -42,17 +40,17 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/test.ns">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="240">
-              <caret line="37" column="10" lean-forward="true" selection-start-line="37" selection-start-column="10" selection-end-line="37" selection-end-column="10" />
+            <state relative-caret-position="555">
+              <caret line="37" column="10" selection-start-line="37" selection-start-column="10" selection-end-line="37" selection-end-column="10" />
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/mat.ns">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="405">
-              <caret line="27" selection-start-line="27" selection-end-line="27" />
+            <state relative-caret-position="360">
+              <caret line="24" column="23" selection-start-line="24" selection-start-column="23" selection-end-line="24" selection-end-column="23" />
             </state>
           </provider>
         </entry>
@@ -60,8 +58,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/Launcher.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="915">
-              <caret line="61" selection-start-line="61" selection-end-line="61" />
+            <state relative-caret-position="-58">
+              <caret line="5" column="13" selection-start-line="5" selection-start-column="13" selection-end-line="5" selection-end-column="13" />
             </state>
           </provider>
         </entry>
@@ -78,12 +76,13 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-158">
-              <caret line="295" column="8" selection-start-line="295" selection-start-column="8" selection-end-line="295" selection-end-column="8" />
+            <state relative-caret-position="180">
+              <caret line="18" selection-start-line="18" selection-end-line="18" />
               <folding>
-                <element signature="e#204#205#0" expanded="true" />
-                <element signature="e#243#244#0" expanded="true" />
+                <element signature="e#356#357#0" expanded="true" />
+                <element signature="e#6720#6721#0" expanded="true" />
                 <element signature="e#6765#6766#0" expanded="true" />
+                <element signature="e#6819#6820#0" expanded="true" />
                 <element signature="e#6853#6854#0" expanded="true" />
               </folding>
             </state>
@@ -126,6 +125,8 @@
       <find>run(</find>
       <find>//</find>
       <find>var</find>
+      <find>&quot;type&quot;</find>
+      <find>&quot;in&quot;</find>
     </findStrings>
     <replaceStrings>
       <replace>WORD</replace>
@@ -162,10 +163,12 @@
         <option value="$PROJECT_DIR$/src/cn/ac/nya/nsasm/Editor.java" />
         <option value="$PROJECT_DIR$/new.ns" />
         <option value="$PROJECT_DIR$/src/cn/ac/nya/nsasm/Launcher.java" />
-        <option value="$PROJECT_DIR$/src/cn/ac/nya/nsasm/NSASM.java" />
         <option value="$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java" />
         <option value="$PROJECT_DIR$/test.ns" />
         <option value="$PROJECT_DIR$/mat.ns" />
+        <option value="$PROJECT_DIR$/src/cn/ac/nya/nsasm/funcList.java" />
+        <option value="$PROJECT_DIR$/src/cn/ac/nya/nsasm/ExtLoader.java" />
+        <option value="$PROJECT_DIR$/src/cn/ac/nya/nsasm/NSASM.java" />
       </list>
     </option>
   </component>
@@ -181,6 +184,8 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
+      <pane id="PackagesPane" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -203,8 +208,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
-      <pane id="PackagesPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -213,13 +216,16 @@
     <property name="GenerateAntBuildDialog.generateSingleFile" value="true" />
     <property name="GenerateAntBuildDialog.outputFileNameProperty" value="jnsasm" />
     <property name="full.screen.before.presentation.mode" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../NSGDX" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../Forge114" />
     <property name="project.structure.last.edited" value="Modules" />
     <property name="project.structure.proportion" value="0.15" />
     <property name="project.structure.side.proportion" value="0.2" />
     <property name="settings.editor.selected.configurable" value="http.proxy" />
   </component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="E:\Works\jNSASM" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="E:\Works\jNSASM\src" />
     </key>
@@ -253,7 +259,7 @@
     <configuration name="jNSASM" type="Application" factoryName="Application">
       <option name="MAIN_CLASS_NAME" value="cn.ac.nya.nsasm.Launcher" />
       <module name="jNSASM" />
-      <option name="PROGRAM_PARAMETERS" value="r test.ns" />
+      <option name="PROGRAM_PARAMETERS" value="i" />
       <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea" />
       <method v="2">
         <option name="Make" enabled="true" />
@@ -353,7 +359,7 @@
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.13486141" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.1369936" />
       <window_info id="Structure" order="1" weight="0.25" />
       <window_info id="Nl-Palette" order="2" />
       <window_info id="Capture Tool" order="3" />
@@ -363,7 +369,7 @@
       <window_info id="Image Layers" order="7" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32790446" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.3383948" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.3383948" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.38503253" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -371,7 +377,7 @@
       <window_info anchor="bottom" id="Event Log" order="7" side_tool="true" />
       <window_info anchor="bottom" id="Version Control" order="8" />
       <window_info anchor="bottom" id="Terminal" order="9" weight="0.32936078" />
-      <window_info anchor="bottom" id="Messages" order="10" weight="0.32936078" />
+      <window_info anchor="bottom" id="Messages" order="10" weight="0.3286334" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -386,16 +392,6 @@
     </layout>
   </component>
   <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/NSASM.java</url>
-          <line>284</line>
-          <properties />
-          <option name="timeStamp" value="8" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
     <watches-manager>
       <configuration name="Application">
         <watch expression="nsasm" />
@@ -427,13 +423,7 @@
     <entry file="jar://C:/Program Files/Java/jdk1.8.0_91/src.zip!/java/util/LinkedList.java" />
     <entry file="jar://C:/Program Files/Java/jdk1.8.0_91/src.zip!/java/lang/String.java" />
     <entry file="jar://C:/Program Files/Java/jdk1.8.0_91/src.zip!/java/lang/Integer.java" />
-    <entry file="file://$PROJECT_DIR$/p1s.ns">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="210">
-          <caret line="14" column="15" selection-start-line="14" selection-start-column="15" selection-end-line="14" selection-end-column="15" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/p1s.ns" />
     <entry file="file://$PROJECT_DIR$/../NSASM/nsasm.c" />
     <entry file="jar://C:/Program Files/Java/jdk1.8.0_91/javafx-src.zip!/javafx/scene/input/KeyEvent.java" />
     <entry file="jar://C:/Program Files/Java/jdk1.8.0_91/javafx-src.zip!/javafx/scene/Node.java" />
@@ -445,13 +435,7 @@
     <entry file="jar://C:/Program Files/Java/jdk1.8.0_152/src.zip!/java/lang/String.java" />
     <entry file="jar://C:/Program Files/Java/jdk1.8.0_152/src.zip!/java/lang/System.java" />
     <entry file="jar://C:/Program Files/Java/jdk1.8.0_162/src.zip!/java/lang/String.java" />
-    <entry file="file://$PROJECT_DIR$/sam.ns">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-292">
-          <caret line="31" column="14" selection-start-line="31" selection-start-column="14" selection-end-line="31" selection-end-column="14" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/sam.ns" />
     <entry file="file://$PROJECT_DIR$/new.ns" />
     <entry file="jar://C:/Program Files/Java/jdk1.8.0_162/src.zip!/java/util/LinkedHashMap.java" />
     <entry file="jar://C:/Program Files/Java/jdk1.8.0_162/src.zip!/java/util/HashMap.java" />
@@ -476,10 +460,17 @@
         <state relative-caret-position="-10352" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/Launcher.java">
+    <entry file="file://$PROJECT_DIR$/test.ns">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="915">
-          <caret line="61" selection-start-line="61" selection-end-line="61" />
+        <state relative-caret-position="555">
+          <caret line="37" column="10" selection-start-line="37" selection-start-column="10" selection-end-line="37" selection-end-column="10" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/mat.ns">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="360">
+          <caret line="24" column="23" selection-start-line="24" selection-start-column="23" selection-end-line="24" selection-end-column="23" />
         </state>
       </provider>
     </entry>
@@ -490,21 +481,29 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/test.ns">
+    <entry file="file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/ExtLoader.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="37" column="10" lean-forward="true" selection-start-line="37" selection-start-column="10" selection-end-line="37" selection-end-column="10" />
+        <state relative-caret-position="179">
+          <caret line="12" lean-forward="true" selection-start-line="12" selection-end-line="12" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/Launcher.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-58">
+          <caret line="5" column="13" selection-start-line="5" selection-start-column="13" selection-end-line="5" selection-end-column="13" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/Util.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-158">
-          <caret line="295" column="8" selection-start-line="295" selection-start-column="8" selection-end-line="295" selection-end-column="8" />
+        <state relative-caret-position="180">
+          <caret line="18" selection-start-line="18" selection-end-line="18" />
           <folding>
-            <element signature="e#204#205#0" expanded="true" />
-            <element signature="e#243#244#0" expanded="true" />
+            <element signature="e#356#357#0" expanded="true" />
+            <element signature="e#6720#6721#0" expanded="true" />
             <element signature="e#6765#6766#0" expanded="true" />
+            <element signature="e#6819#6820#0" expanded="true" />
             <element signature="e#6853#6854#0" expanded="true" />
           </folding>
         </state>
@@ -512,15 +511,11 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/cn/ac/nya/nsasm/NSASM.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="262">
-          <caret line="302" column="25" lean-forward="true" selection-start-line="302" selection-start-column="25" selection-end-line="302" selection-end-column="25" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/mat.ns">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="405">
-          <caret line="27" selection-start-line="27" selection-end-line="27" />
+        <state relative-caret-position="722">
+          <caret line="1711" column="11" lean-forward="true" selection-start-line="1631" selection-start-column="8" selection-end-line="1711" selection-end-column="11" />
+          <folding>
+            <element signature="e#17424#17425#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

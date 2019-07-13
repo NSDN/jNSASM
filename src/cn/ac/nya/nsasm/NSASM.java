@@ -7,10 +7,10 @@ import java.util.*;
  */
 public class NSASM {
 
-    public static final String version = "0.54 (Java)";
+    public static final String version = "0.60 (Java)";
 
     public enum RegType {
-        CHAR, STR, INT, FLOAT, CODE, MAP
+        CHAR, STR, INT, FLOAT, CODE, MAP, PAR, NUL
     }
 
     public class Register {
@@ -48,7 +48,12 @@ public class NSASM {
             readOnly = reg.readOnly;
         }
 
-        public Register() {}
+        public Register() {
+            type = RegType.NUL;
+            data = 0;
+            strPtr = 0;
+            readOnly = false;
+        }
 
         public Register(Register reg) {
             copy(reg);
@@ -74,6 +79,10 @@ public class NSASM {
         Result run(Register dst, Register src, Register ext);
     }
 
+    public interface Param {
+        Register mod(Register reg); // if reg is null, it's read, else write
+    }
+
     private LinkedHashMap<String, Register> heapManager;
     private LinkedList<Register> stackManager;
     private int heapSize, stackSize, regCnt;
@@ -89,6 +98,8 @@ public class NSASM {
     protected LinkedHashMap<String, Operator> funcList;
     private LinkedHashMap<String, String[]> code;
 
+    protected LinkedHashMap<String, Param> paramList;
+
     public enum Result {
         OK, ERR, ETC
     }
@@ -96,7 +107,7 @@ public class NSASM {
     private enum WordType {
         REG, CHAR, STR, INT,
         FLOAT, VAR, TAG, SEG,
-        CODE, MAP
+        CODE, MAP, PAR
     }
 
     private boolean verifyBound(String var, char left, char right) {
@@ -141,19 +152,27 @@ public class NSASM {
                 if (var.charAt(0) == 'm' || var.charAt(0) == 'M')
                     return verifyBound(var.substring(1), '(', ')');
                 else return false;
+            case PAR:
+                return paramList.containsKey(var);
             case VAR:
                 return !verifyWord(var, WordType.REG) && !verifyWord(var, WordType.CHAR) &&
                     !verifyWord(var, WordType.STR) && !verifyWord(var, WordType.INT) &&
                     !verifyWord(var, WordType.FLOAT) && !verifyWord(var, WordType.TAG) &&
                     !verifyWord(var, WordType.SEG) && !verifyWord(var, WordType.CODE) &&
-                    !verifyWord(var, WordType.MAP);
+                    !verifyWord(var, WordType.MAP) && !verifyWord(var, WordType.PAR);
         }
         return false;
     }
 
     private Register getRegister(String var) {
         if (var.length() == 0) return null;
-        if (verifyWord(var, WordType.REG)) {
+        if (verifyWord(var, WordType.PAR)) {
+            Register register = new Register();
+            register.type = RegType.PAR;
+            register.readOnly = true;
+            register.data = var;
+            return register;
+        } else if (verifyWord(var, WordType.REG)) {
             //Register
             int index = Integer.valueOf(var.substring(1));
             if (index < 0 || index >= regGroup.length) return null;
@@ -326,8 +345,35 @@ public class NSASM {
         if (!funcList.containsKey(operator))
             return verifyWord(operator, WordType.TAG) ? Result.OK : Result.ERR;
 
+        Register tdr = null, tsr = null, ter = null;
+        String pdr = "", psr = "", per = "";
+        if (dr != null && dr.type == RegType.PAR) {
+            pdr = (String) dr.data;
+            tdr = paramList.get(pdr).mod(null);
+            dr = new Register(tdr);
+        }
+        if (sr != null && sr.type == RegType.PAR) {
+            psr = (String) sr.data;
+            tsr = paramList.get(psr).mod(null);
+            sr = new Register(tsr);
+        }
+        if (er != null && er.type == RegType.PAR) {
+            per = (String) er.data;
+            ter = paramList.get(per).mod(null);
+            er = new Register(ter);
+        }
+
         prevDstReg = dr != null ? dr : prevDstReg;
-        return funcList.get(operator).run(dr, sr, er);
+        Result result = funcList.get(operator).run(dr, sr, er);
+
+        if (ter != null && !ter.equals(er))
+            paramList.get(per).mod(er);
+        if (tsr != null && !tsr.equals(sr))
+            paramList.get(psr).mod(sr);
+        if (tdr != null && !tdr.equals(dr))
+            paramList.get(pdr).mod(dr);
+
+        return result;
     }
 
     public Register run() {
@@ -507,6 +553,9 @@ public class NSASM {
 
         funcList = new LinkedHashMap<>();
         loadFuncList();
+
+        paramList = new LinkedHashMap<>();
+        loadParamList();
 
         this.code = new LinkedHashMap<>();
         if (appendCode(code) == Result.ERR) {
@@ -1518,6 +1567,8 @@ public class NSASM {
                 case STR: reg.data = "str"; break;
                 case CODE: reg.data = "code"; break;
                 case MAP: reg.data = "map"; break;
+                case PAR: reg.data = "par"; break;
+                case NUL: reg.data = "nul"; break;
             }
             return funcList.get("mov").run(dst, reg, null);
         });
@@ -1574,6 +1625,90 @@ public class NSASM {
             reg.readOnly = true;
             reg.data = ((String)dst.data).equals((String)src.data) ? 0 : 1;
             return funcList.get("mov").run(stateReg, reg, null);
+        });
+    }
+
+    protected void loadParamList() {
+        paramList.put("null", (reg) -> {
+            Register res = new Register();
+            res.type = RegType.STR;
+            res.data = "null";
+            return res;
+        });
+        paramList.put("rand", (reg) -> {
+            if (reg == null) {
+                Register res = new Register();
+                res.type = RegType.FLOAT;
+                res.readOnly = true;
+                res.data = (float) Math.random();
+                return res;
+            }
+            return reg;
+        });
+        paramList.put("cinc", (reg) -> {
+            if (reg == null) {
+                Register res = new Register();
+                res.type = RegType.CHAR;
+                if (funcList.get("in").run(res, null, null) != Result.OK)
+                    return null;
+                res.readOnly = true;
+                return res;
+            }
+            return reg;
+        });
+        paramList.put("cini", (reg) -> {
+            if (reg == null) {
+                Register res = new Register();
+                res.type = RegType.INT;
+                if (funcList.get("in").run(res, null, null) != Result.OK)
+                    return null;
+                res.readOnly = true;
+                return res;
+            }
+            return reg;
+        });
+        paramList.put("cinf", (reg) -> {
+            if (reg == null) {
+                Register res = new Register();
+                res.type = RegType.FLOAT;
+                if (funcList.get("in").run(res, null, null) != Result.OK)
+                    return null;
+                res.readOnly = true;
+                return res;
+            }
+            return reg;
+        });
+        paramList.put("cins", (reg) -> {
+            if (reg == null) {
+                Register res = new Register();
+                res.type = RegType.STR;
+                if (funcList.get("in").run(res, null, null) != Result.OK)
+                    return null;
+                res.readOnly = true;
+                return res;
+            }
+            return reg;
+        });
+        paramList.put("cin", (reg) -> {
+            if (reg == null) {
+                Register res = new Register();
+                res.type = RegType.STR;
+                if (funcList.get("in").run(res, null, null) != Result.OK)
+                    return null;
+                res.readOnly = true;
+                return res;
+            }
+            return reg;
+        });
+        paramList.put("cout", (reg) -> {
+            if (reg == null) return new Register();
+            funcList.get("out").run(reg, null, null);
+            return reg;
+        });
+        paramList.put("cprt", (reg) -> {
+            if (reg == null) return new Register();
+            funcList.get("prt").run(reg, null, null);
+            return reg;
         });
     }
 
