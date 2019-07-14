@@ -1,29 +1,49 @@
 run <main>
 
+.print<value> {
+	prt value
+}
+
+.printInfo<a, b, c, d> {
+	prt "Test Output:"
+
+	out '\t'
+	out "a is: "
+	prt a
+
+	out '\t'
+	out "b is: "
+	prt b
+
+	out '\t'
+	out "c is: "
+	prt c
+
+	out '\t'
+	out "d is: "
+	prt d
+}
+
 <main> {
 	map m1 = M(
 		mov r0, 20
 		mov r1, 0
 	[head]
-		inc r1
 		mov r2, r1
 		mul r2, r1
 		put r1, r2
-		cmp r1, r0
-		jnz [head]
+		loop r1, r0, [head]
 	)
 
     use m1
     mov r0, 20
     mov r1, 0
 [work]
-    inc r1
     get r2, r1
     out r2
     out ", "
-    cmp r1, r0
-    jnz [work]
-    out '\n'
+    loop r1, r0, [work]
+	out '\n'
 
     code c = (
         run <test1>
@@ -39,6 +59,13 @@ run <main>
 
     eval r0, c
     out "result is "
-    prt r0
+    print<r0>
+
+	prt "Marco Expandation Test"
+	printInfo<0x32, 123.0F, 'A', "Gensokyo">
+
+    prt "Test point ( 1, 2, 3 )"
+    prt "Test seg { \"key\": \"value\" }"
+
     end
 }
