@@ -1,13 +1,15 @@
 package cn.ac.nya.nsasm;
 
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
 
 /**
  * Created by drzzm on 2017.4.21.
  */
 public class NSASM {
 
-    public static final String version = "0.60 (Java)";
+    public static final String version = "0.61 (Java)";
 
     public enum RegType {
         CHAR, STR, INT, FLOAT, CODE, MAP, PAR, NUL
@@ -67,6 +69,7 @@ public class NSASM {
         public String toString() {
             String str = "M(\n";
             for (Register key : keySet()) {
+                if (get(key) == null) continue;
                 str = str.concat(key.toString() + "->" + get(key).toString() + "\n");
             }
             str += ")";
@@ -83,6 +86,51 @@ public class NSASM {
         Register mod(Register reg); // if reg is null, it's read, else write
     }
 
+    protected class SafePool<T> extends ArrayList<T> {
+
+        private final ReentrantLock lock = new ReentrantLock();
+
+        public SafePool() { super(); }
+
+        public SafePool(int cap) { super(cap); }
+
+        public int count() {
+            try {
+                lock.lock();
+                return super.size();
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        @Override
+        public boolean add(T value) {
+            try {
+                lock.lock();
+                return super.add(value);
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        public void insert(int index, T value) {
+            lock.lock();
+            super.add(index, value);
+            lock.unlock();
+        }
+
+        @Override
+        public T get(int index) {
+            try {
+                lock.lock();
+                return super.get(index);
+            } finally {
+                lock.unlock();
+            }
+        }
+
+    }
+
     private LinkedHashMap<String, Register> heapManager;
     private LinkedList<Register> stackManager;
     private int heapSize, stackSize, regCnt;
@@ -90,6 +138,11 @@ public class NSASM {
     protected Register[] regGroup;
     private Register stateReg;
     private Register prevDstReg;
+
+    private Register argReg;
+    public void setArgument(Register reg) {
+        argReg = new Register(reg);
+    }
 
     private LinkedList<Integer> backupReg;
     private int progSeg, tmpSeg;
@@ -550,6 +603,7 @@ public class NSASM {
             regGroup[i].data = 0;
         }
         useReg = regGroup[regCnt];
+        argReg = null;
 
         funcList = new LinkedHashMap<>();
         loadFuncList();
@@ -763,7 +817,7 @@ public class NSASM {
             if (src != null) return Result.ERR;
             if (dst == null) return Result.ERR;
             if (stackManager.size() >= stackSize) return Result.ERR;
-            stackManager.push(dst);
+            stackManager.push(new Register(dst));
             return Result.OK;
         });
 
@@ -1400,18 +1454,54 @@ public class NSASM {
             if (src == null) return Result.ERR;
             if (ext == null) return Result.ERR;
 
-            if (dst.type != RegType.MAP) return Result.ERR;
+            if (dst.readOnly) return Result.ERR;
             if (src.type != RegType.CODE) return Result.ERR;
-            if (ext.type != RegType.INT) return Result.ERR;
+            if (ext.type != RegType.MAP) return Result.ERR;
 
-            Register reg = new Register(), count = new Register();
-            count.type = RegType.INT; count.readOnly = false;
-            for (int i = 0; i < (int)ext.data; i++) {
-                count.data = i;
-                if (funcList.get("eval").run(reg, src, null) == Result.ERR)
-                    return Result.ERR;
-                if (funcList.get("put").run(dst, count, reg) == Result.ERR)
-                    return Result.ERR;
+            if (ext.data instanceof Map) {
+                Map map = (Map) ext.data;
+                if (!map.isEmpty()) {
+                    int cnt = map.size();
+                    String[][] code = Util.getSegments(src.data.toString());
+                    ArrayList<Register> keys = new ArrayList<>(map.keySet());
+
+                    Thread[] threads = new Thread[cnt];
+                    SafePool<Integer> signPool = new SafePool<>();
+                    SafePool<NSASM> runnerPool = new SafePool<>();
+                    SafePool<Register> outputPool = new SafePool<>();
+                    for (int i = 0; i < cnt; i++) {
+                        NSASM core = new NSASM(this, code);
+                        core.setArgument(map.get(keys.get(i)));
+                        runnerPool.add(core);
+                        outputPool.add(new Register());
+                    }
+
+                    class Runner implements Runnable {
+                        private int index;
+                        Runner(int index) { this.index = index; }
+
+                        @Override
+                        public void run() {
+                            NSASM core = runnerPool.get(index);
+                            outputPool.insert(index, core.run());
+                            signPool.add(index);
+                        }
+                    }
+                    for (int i = 0; i < cnt; i++)
+                        threads[i] = new Thread(new Runner(i));
+
+                    for (int i = 0; i < cnt; i++)
+                        threads[i].run();
+                    while (signPool.count() < cnt)
+                        funcList.get("nop").run(null, null, null);
+
+                    dst.type = RegType.MAP;
+                    dst.readOnly = false;
+                    Map res = new Map();
+                    for (int i = 0; i < cnt; i++)
+                        res.put(keys.get(i), outputPool.get(i));
+                    dst.data = res;
+                }
             }
 
             return Result.OK;
@@ -1708,6 +1798,30 @@ public class NSASM {
         paramList.put("cprt", (reg) -> {
             if (reg == null) return new Register();
             funcList.get("prt").run(reg, null, null);
+            return reg;
+        });
+        paramList.put("arg", (reg) -> {
+            if (reg == null) {
+                Register res = new Register();
+                if (argReg == null) {
+                    res.type = RegType.STR;
+                    res.readOnly = true;
+                    res.data = "null";
+                } else {
+                    res.copy(argReg);
+                }
+                return res;
+            }
+            return reg;
+        });
+        paramList.put("tid", (reg) -> {
+            if (reg == null) {
+                Register res = new Register();
+                res.type = RegType.INT;
+                res.readOnly = true;
+                res.data = (int) Thread.currentThread().getId();
+                return res;
+            }
             return reg;
         });
     }
