@@ -27,9 +27,7 @@ run <main>
 <par_run> {
 	prt "Init core code..."
 	code coreCode = (
-	    out "Thread-"
-        out tid
-        prt " running!"
+	    prt "Thread-", tid, " running!"
 
 		mov r0, 0
 		mov r1, arg

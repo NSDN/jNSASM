@@ -382,7 +382,7 @@ public class NSASM {
                 List<String> args = Util.parseArgs(res, ',');
                 for (int i = 0; i < args.size(); i++)
                     for (java.util.Map.Entry<String, String> it : strings.entrySet())
-                            args.add(i, args.get(i).replace(it.getKey(), it.getValue()));
+                            args.set(i, args.get(i).replace(it.getKey(), it.getValue()));
 
                 dst = src = ext = "";
                 if (args.size() > 0) dst = args.get(0);
@@ -945,6 +945,15 @@ public class NSASM {
         funcList.put("prt", (dst, src, ext) -> {
             if (dst == null) return Result.ERR;
             if (src != null) {
+                if (ext != null) {
+                    Util.print(
+                        dst.data.toString() +
+                        src.data.toString() +
+                        ext.data.toString() +
+                        '\n'
+                    );
+                    return Result.OK;
+                }
                 if (dst.type == RegType.STR) {
                     if (dst.readOnly) return Result.ERR;
                     if (src.type == RegType.CHAR && src.data.equals('\b')) {
@@ -1478,7 +1487,7 @@ public class NSASM {
 
                     class Runner implements Runnable {
                         private int index;
-                        Runner(int index) { this.index = index; }
+                        private Runner(int index) { this.index = index; }
 
                         @Override
                         public void run() {
