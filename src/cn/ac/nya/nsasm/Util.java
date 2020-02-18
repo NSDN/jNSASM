@@ -425,7 +425,9 @@ public class Util {
 
             DefBlock ret = new DefBlock();
             ret.name = head.substring(1).split("<")[0];
-            String arg = head.split("[<>]")[1];
+            String[] parts = head.split("[<>]");
+            String arg = "";
+            if (parts.length > 1) arg = parts[1];
             ret.args = parseArgs(arg, ',');
             ret.block = body;
 
@@ -510,7 +512,9 @@ public class Util {
         public static DefCall getCall(String str) {
             DefCall ret = new DefCall();
             ret.name = str.split("<")[0];
-            String arg = str.split("[<>]")[1];
+            String[] parts = str.split("[<>]");
+            String arg = "";
+            if (parts.length > 1) arg = parts[1];
             ret.args = parseArgs(arg, ',');
 
             return ret;
